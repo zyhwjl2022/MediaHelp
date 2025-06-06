@@ -1,0 +1,21 @@
+app:
+  title: "MediaHelper API"
+  description: "Media Helper Backend Service"
+  version: "1.0.0"
+  API_V1_STR: "/api/v1"
+  debug: false
+
+server:
+  host: "0.0.0.0"
+  port: 5555
+
+database:
+  async_url: "sqlite+aiosqlite:///./prod.db"
+
+logging:
+  level: "INFO"
+
+security:
+  secret_key: "your-production-secret-key-please-change-it"  # 请在实际生产环境中修改为强密钥
+  algorithm: "HS256"
+  access_token_expire_minutes: 30 
