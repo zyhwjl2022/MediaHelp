@@ -37,7 +37,7 @@ const currentCollapsed = ref(false);
 
 const { delegatedSlots, form } = useFormInitial(props);
 
-provideFormProps([props, form]);
+provideFormProps([props as any, form]);
 
 const handleUpdateCollapsed = (value: boolean) => {
   currentCollapsed.value = !!value;

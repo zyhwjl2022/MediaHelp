@@ -11,6 +11,7 @@ server:
 
 database:
   async_url: "sqlite+aiosqlite:///./prod.db"
+  url: "sqlite:///./prod.db"
 
 logging:
   level: "INFO"

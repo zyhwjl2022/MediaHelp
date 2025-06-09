@@ -3,16 +3,17 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
+from crud.config import settings
 
 # 导入配置和模型
-from crud.config import settings
 from models.base import Base
 import models.user  # 导入所有模型以确保它们被注册
+import models.sysSetting   # 导入所有模型以确保它们被注册
 
 # this is the Alembic Config object
 config = context.config
 
-# 设置数据库URL
+# 设置数据库URL（使用同步URL）
 config.set_main_option("sqlalchemy.url", settings.database_config["url"])
 
 # Interpret the config file for Python logging

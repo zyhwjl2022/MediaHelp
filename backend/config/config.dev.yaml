@@ -11,6 +11,7 @@ server:
 
 database:
   async_url: "sqlite+aiosqlite:///./dev.db"
+  url: "sqlite:///./dev.db"
 
 logging:
   level: "DEBUG"

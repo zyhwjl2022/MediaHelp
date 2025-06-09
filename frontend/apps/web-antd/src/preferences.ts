@@ -9,5 +9,12 @@ export const overridesPreferences = defineOverridesPreferences({
   // overrides
   app: {
     name: import.meta.env.VITE_APP_TITLE,
+    defaultHomePath: '/douban/hot-movie',
+  },
+  logo: {
+    source: '/icon.png',
+  },
+  widget: {
+    languageToggle: false,
   },
 });

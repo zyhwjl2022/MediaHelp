@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from crud.user import user as user_crud
 from schemas.auth import Token, LoginRequest
-from schemas.user import UserCreate
+from schemas.user import UserCreate, UserResponse
 from utils.auth import create_access_token
 from crud.database import get_db_session
 from crud.config import settings
@@ -95,3 +95,29 @@ async def create_user(
     # 创建新用户
     user = await user_crud.create(db, obj_in=user_in)
     return Response(data=user)
+
+@router.get("/user/info", response_model=Response[UserResponse])
+async def get_current_user_info(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取当前登录用户信息
+    
+    返回示例:
+    ```json
+    {
+        "code": 200,
+        "message": "操作成功",
+        "data": {
+            "id": 1,
+            "username": "admin",
+            "email": "admin@example.com",
+            "is_active": true,
+            "created_at": "2024-03-20T10:00:00",
+            "updated_at": "2024-03-20T10:00:00"
+        }
+    }
+    ```
+    """
+    return Response(data=UserResponse.model_validate(current_user))
+
