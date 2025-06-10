@@ -1,0 +1,20 @@
+alist_api_key: ''
+alist_url: ''
+emby_api_key: '111'
+emby_url: '222'
+quarkCookie: '333'
+tianyiAccount: '444'
+tianyiPassword: '555'
+tg_resource:
+  telegram:
+    baseUrl: https://t.me/s
+    channels:
+    - id: yunpanqk
+      name: 网盘资源收藏(夸克)
+    - id: tyypzhpd
+      name: 天翼云盘综合频道
+  cloudPatterns:
+    aliyun: https?://www\.aliyundrive\.com/s/[a-zA-Z0-9]+
+    tianyiyun: https?://cloud\.189\.cn/t/[a-zA-Z0-9]+
+    quark: https?://pan\.quark\.cn/s/[a-zA-Z0-9]+
+    baidu: https?://pan\.baidu\.com/s/[a-zA-Z0-9_-]+

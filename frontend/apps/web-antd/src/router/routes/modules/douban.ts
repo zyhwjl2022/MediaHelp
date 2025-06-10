@@ -4,7 +4,7 @@ const routes: RouteRecordRaw[] = [
   {
     meta: {
       icon: 'ic:baseline-view-in-ar',
-      keepAlive: true,
+      // keepAlive: true,
       order: 1000,
       title: '豆瓣推荐',
     },

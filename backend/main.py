@@ -10,19 +10,6 @@ import logging
 from crud.config import settings
 from api.main import api_router
 from utils.exceptions import APIException, api_exception_handler, validation_exception_handler, http_exception_handler, create_error_response
-from datetime import datetime
-from crud.database import get_db
-from crud.sysSetting import sys_setting
-from utils.sys_config import global_config
-from contextlib import asynccontextmanager
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # 启动时执行
-    await init_system_config()
-    yield
-    # 关闭时执行
-    global_config.clear_config()
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     if route.tags:
@@ -68,16 +55,6 @@ def setup_logging():
         _logger.propagate = False
         _logger.addHandler(InterceptHandler())
 
-async def init_system_config():
-    """初始化系统配置缓存"""
-    try:
-        async with get_db() as db:
-            config = await sys_setting.get_sys_setting(db)
-            global_config.update_config(config)
-            logger.info("系统配置缓存已初始化")
-    except Exception as e:
-        logger.error(f"初始化系统配置缓存失败: {str(e)}")
-
 def init_app():
     # 初始化日志
     setup_logging()
@@ -89,7 +66,6 @@ def init_app():
         version=settings.app_config["version"],
         debug=settings.app_config["debug"],
         generate_unique_id_function=custom_generate_unique_id,
-        lifespan=lifespan
     )
 
     # 添加CORS中间件

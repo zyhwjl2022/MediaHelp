@@ -4,13 +4,13 @@ const routes: RouteRecordRaw[] = [
   {
     meta: {
       icon: 'ic:baseline-view-in-ar',
-      keepAlive: true,
+      // keepAlive: true,
       order: 1000,
-      title: '系统配置',
+      title: '资源搜索',
     },
-    name: 'SysConfig',
-    path: '/sys-config',
-    component: () => import('#/views/sysConfig/index.vue'),
+    name: 'Resource',
+    path: '/resource',
+    component: () => import('#/views/resource/index.vue'),
   },
 ];
 
