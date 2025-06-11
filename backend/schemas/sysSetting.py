@@ -43,3 +43,15 @@ class SysSettingUpdate(BaseModel):
     tianyiAccount: Optional[str] = Field(default=None, description="天翼账号")
     tianyiPassword: Optional[str] = Field(default=None, description="天翼密码")
     quarkCookie: Optional[str] = Field(default=None, description="夸克Cookie")
+    use_proxy: Optional[bool] = Field(default=None, description="是否使用代理")
+    proxy_host: Optional[str] = Field(default=None, description="代理主机")
+    proxy_port: Optional[str] = Field(default=None, description="代理端口")
+    proxy_username: Optional[str] = Field(default=None, description="代理用户名")
+    proxy_password: Optional[str] = Field(default=None, description="代理密码")
+
+class ProxyConfig(BaseModel):
+    use_proxy: bool = False
+    proxy_host: Optional[str] = None
+    proxy_port: Optional[str] = None
+    proxy_username: Optional[str] = None
+    proxy_password: Optional[str] = None

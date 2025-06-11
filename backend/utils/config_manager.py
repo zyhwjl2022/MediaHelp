@@ -19,6 +19,13 @@ class ConfigManager:
         "tianyiPassword": "",  # 天翼云盘密码
         # 夸克网盘配置
         "quarkCookie": "",  # 夸克网盘Cookie
+        # 代理配置
+        "use_proxy": False,  # 是否使用代理
+        "proxy_host": "",  # 代理主机地址
+        "proxy_port": "",  # 代理端口
+        "proxy_username": "",  # 代理用户名（可选）
+        "proxy_password": "",  # 代理密码（可选）
+        # TG资源配置
         "tg_resource": {
             "telegram": {
                 "baseUrl": "https://t.me/s",

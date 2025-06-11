@@ -1,10 +1,10 @@
-import re
-import aiohttp
 import asyncio
+import re
 from typing import Dict, List, Optional, TypedDict
 from bs4 import BeautifulSoup
 from loguru import logger
 from utils.config_manager import config_manager
+from utils.http_client import http_client
 
 class ChannelInfo(TypedDict):
     """频道信息"""
@@ -36,30 +36,11 @@ class SearchResult(TypedDict):
 
 class TGResourceSDK:
     _instance = None
-    _session: Optional[aiohttp.ClientSession] = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(TGResourceSDK, cls).__new__(cls)
-            cls._instance._init()
         return cls._instance
-
-    def _init(self):
-        """初始化SDK"""
-        self._headers = {
-            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-            "cache-control": "max-age=0",
-            "priority": "u=0, i",
-            "sec-ch-ua": '"Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"macOS"',
-            "sec-fetch-dest": "document",
-            "sec-fetch-mode": "navigate",
-            "sec-fetch-site": "none",
-            "sec-fetch-user": "?1",
-            "upgrade-insecure-requests": "1",
-        }
 
     def _get_config(self) -> dict:
         """获取配置"""
@@ -72,37 +53,20 @@ class TGResourceSDK:
             "cloudPatterns": {}
         })
 
-    async def _ensure_session(self):
-        """确保会话已创建"""
-        if self._session is None or self._session.closed:
-            # 获取代理配置
-            sys_config = config_manager.get_config()
-            proxy = None
-            if sys_config.get("use_proxy", False):
-                proxy = f"http://{sys_config.get('proxy_host', '')}:{sys_config.get('proxy_port', '')}"
-            
-            self._session = aiohttp.ClientSession(
-                headers=self._headers,
-                trust_env=True
-            )
-            if proxy:
-                self._session._connector._ssl = False
-                self._session._connector.proxy = proxy
-
     def _extract_cloud_links(self, text: str) -> tuple[List[str], str]:
         """提取云盘链接"""
         links: List[str] = []
         cloud_type = ""
         config = self._get_config()
         
-        logger.info(f"开始提取云盘链接，配置: {config['cloudPatterns']}")  # 改用 info 级别
+        logger.info(f"开始提取云盘链接，配置: {config['cloudPatterns']}")
         
         for cloud_name, pattern in config["cloudPatterns"].items():
-            logger.info(f"尝试匹配 {cloud_name} 云盘链接，使用模式: {pattern}")  # 改用 info 级别
+            logger.info(f"尝试匹配 {cloud_name} 云盘链接，使用模式: {pattern}")
             try:
                 matches = re.findall(pattern, text)
                 if matches:
-                    logger.info(f"找到 {cloud_name} 云盘链接: {matches}")  # 改用 info 级别
+                    logger.info(f"找到 {cloud_name} 云盘链接: {matches}")
                     links.extend(matches)
                     if not cloud_type:
                         cloud_type = cloud_name
@@ -110,23 +74,21 @@ class TGResourceSDK:
                 logger.error(f"匹配 {cloud_name} 云盘链接时出错: {str(e)}")
                 continue
         
-        # 确保返回的链接是唯一的
         unique_links = list(set(links))
-        logger.info(f"最终提取结果 - 链接: {unique_links}, 云盘类型: {cloud_type}")  # 改用 info 级别
+        logger.info(f"最终提取结果 - 链接: {unique_links}, 云盘类型: {cloud_type}")
         return unique_links, cloud_type
 
     async def _search_in_web(self, url: str) -> tuple[List[ResourceItem], str]:
         """在网页中搜索资源"""
         try:
-            logger.info(f"[Task {id(asyncio.current_task())}] 开始执行搜索任务: {url}")
-            await self._ensure_session()
+            logger.info(f"开始执行搜索任务: {url}")
             config = self._get_config()
+            
             try:
-                async with self._session.get(f"{config['telegram']['baseUrl']}{url}") as response:
-                    logger.info(f"[Task {id(asyncio.current_task())}] 获取到响应: {url}, 状态码: {response.status}")
-                    html = await response.text()
+                html = await http_client.get(f"{config['telegram']['baseUrl']}{url}")
+                logger.info(f"获取到响应: {url}")
             except Exception as e:
-                logger.error(f"[Task {id(asyncio.current_task())}] 请求失败: {url}", exc_info=e)
+                logger.error(f"请求失败: {url}", exc_info=e)
                 raise
             
             soup = BeautifulSoup(html, 'html.parser')
@@ -176,15 +138,15 @@ class TGResourceSDK:
                     text = a.get_text()
                     if href:
                         links.append(href)
-                        logger.info(f"找到原始链接: {href}")  # 改用 info 级别，确保能看到日志
+                        logger.info(f"找到原始链接: {href}")
                     if text and text.startswith("#"):
                         tags.append(text)
                 
                 # 提取云盘链接
                 all_links = " ".join(links)
-                logger.info(f"准备提取云盘链接，原始链接文本: {all_links}")  # 改用 info 级别
+                logger.info(f"准备提取云盘链接，原始链接文本: {all_links}")
                 cloud_links, cloud_type = self._extract_cloud_links(all_links)
-                logger.info(f"提取结果 - 云盘链接: {cloud_links}, 类型: {cloud_type}")  # 改用 info 级别
+                logger.info(f"提取结果 - 云盘链接: {cloud_links}, 类型: {cloud_type}")
                 
                 # 创建资源项
                 item: ResourceItem = {
@@ -239,9 +201,7 @@ class TGResourceSDK:
                     if message_id:
                         url += message_id_params
                 logger.info(f"创建搜索任务: {url}")
-                task = asyncio.create_task(self._search_in_web(url))
-                task.set_name(f"search_{channel['id']}")
-                tasks.append(task)
+                tasks.append(self._search_in_web(url))
             
             logger.info(f"准备执行 {len(tasks)} 个搜索任务")
             # 等待所有搜索完成
@@ -249,9 +209,9 @@ class TGResourceSDK:
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 for i, result in enumerate(results):
                     if isinstance(result, Exception):
-                        logger.error(f"任务 {tasks[i].get_name()} 执行失败: {str(result)}")
+                        logger.error(f"任务 {i} 执行失败: {str(result)}")
                     else:
-                        logger.info(f"任务 {tasks[i].get_name()} 执行成功")
+                        logger.info(f"任务 {i} 执行成功")
                 
                 # 过滤掉异常结果
                 results = [r for r in results if not isinstance(r, Exception)]
@@ -286,9 +246,7 @@ class TGResourceSDK:
             logger.error("搜索失败", exc_info=e)
             return {"data": []}
         finally:
-            # 关闭会话
-            if self._session and not self._session.closed:
-                await self._session.close()
+            await http_client.close()
 
     async def update_config(self, channels: List[Dict[str, str]] = None, patterns: Dict[str, str] = None):
         """更新SDK配置"""

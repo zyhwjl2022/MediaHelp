@@ -1,12 +1,25 @@
 <script lang="ts" setup>
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { Button, message } from 'ant-design-vue';
+import { onActivated, onMounted, ref } from 'vue';
+
+import {
+  Affix,
+  Button,
+  Divider,
+  Form,
+  FormItem,
+  Input,
+  message,
+  Switch,
+} from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 
 import {
+  getProxyConfigApi,
   getResourceChannelConfigApi,
+  updateProxyConfigApi,
   updateResourceChannelConfigApi,
 } from './api';
 
@@ -18,7 +31,7 @@ interface RowType {
   productName: string;
   releaseDate: string;
 }
-
+const proxyConfig = ref<any>({});
 const gridOptions: VxeGridProps<RowType> = {
   columns: [
     { title: '序号', type: 'seq', width: 50 },
@@ -58,22 +71,56 @@ const addRowEvent = () => {
 
 const saveConfigEvent = async () => {
   const data = gridApi.grid.getTableData();
-  await updateResourceChannelConfigApi({
-    channels: data.tableData,
-  });
+  await Promise.all([
+    updateResourceChannelConfigApi({
+      channels: data.tableData,
+    }),
+    updateProxyConfigApi({
+      use_proxy: proxyConfig.value.use_proxy,
+      proxy_host: proxyConfig.value.proxy_host,
+      proxy_port: proxyConfig.value.proxy_port,
+    }),
+  ]);
   message.success('保存成功');
 };
+
+onMounted(() => {
+  getProxyConfigApi({}).then((res) => {
+    proxyConfig.value = res;
+  });
+});
+onActivated(() => {
+  getProxyConfigApi({}).then((res) => {
+    proxyConfig.value = res;
+  });
+});
 </script>
 
 <template>
   <div class="vp-raw w-full p-[20px]">
-    <Grid>
+    <Divider>代理设置</Divider>
+    <Form layout="inline">
+      <FormItem label="是否启用代理" name="use_proxy" class="w-full pb-[10px]">
+        <Switch v-model:checked="proxyConfig.use_proxy" />
+      </FormItem>
+      <FormItem label="代理地址" name="proxy_host" class="w-[calc(50%-30px)]">
+        <Input v-model:value="proxyConfig.proxy_host" />
+      </FormItem>
+      <FormItem label="代理端口" name="proxy_port" class="w-[calc(50%-30px)]">
+        <Input v-model:value="proxyConfig.proxy_port" />
+      </FormItem>
+    </Form>
+    <Grid class="mb-[20px] mt-[20px]">
       <template #toolbar-tools>
         <Button type="primary" @click="addRowEvent" class="mr-[10px]">
           新增
         </Button>
-        <Button type="primary" @click="saveConfigEvent">保存配置</Button>
       </template>
     </Grid>
+    <Affix :offset-bottom="50">
+      <div class="mr-[20px] flex justify-end">
+        <Button type="primary" @click="saveConfigEvent">保存配置</Button>
+      </div>
+    </Affix>
   </div>
 </template>

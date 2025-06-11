@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import List, Optional, Dict
-import requests
 from pydantic import BaseModel
 import urllib3
 from datetime import datetime, timedelta
+from loguru import logger
+from utils.http_client import http_client
 
 from api.deps import get_current_user
 from models.user import User
@@ -69,27 +70,29 @@ class DoubanService:
             "Sec-Fetch-Site": "same-site",
             "Priority": "u=1, i"
         }
-        self.session = requests.Session()
-        self.session.headers.update(self.headers)
         self.cache = Cache(expire_minutes=30)
 
-    def _get_with_retry(self, url: str, params: dict = None, max_retries: int = 3) -> requests.Response:
+    async def _get_with_retry(self, url: str, params: dict = None, max_retries: int = 3) -> Dict:
         """带重试的GET请求"""
         cache_key = f"{url}_{str(params)}"
         cached_response = self.cache.get(cache_key)
         if cached_response:
             return cached_response
 
-        for i in range(max_retries):
-            try:
-                response = self.session.get(url, params=params, timeout=10)
-                response.raise_for_status()
-                self.cache.set(cache_key, response)
-                return response
-            except Exception as e:
-                print(f"Request failed (attempt {i+1}/{max_retries}): {e}")
-                if i == max_retries - 1:
-                    raise
+        try:
+            response = await http_client.get(
+                url,
+                params=params,
+                headers=self.headers,
+                retry_times=max_retries
+            )
+            if isinstance(response, str):
+                return {}
+            self.cache.set(cache_key, response)
+            return response
+        except Exception as e:
+            logger.error(f"请求失败: {e}")
+            raise HTTPException(status_code=503, detail="豆瓣API访问失败")
 
     def _get_cover_url(self, item: dict) -> str:
         """获取封面图片URL"""
@@ -123,7 +126,7 @@ class DoubanService:
             regions=item.get("regions", [])
         )
 
-    def get_hot_list(
+    async def get_hot_list(
         self,
         type: str = "movie",
         category: str = None,
@@ -148,18 +151,14 @@ class DoubanService:
                         "type": "show"
                     })
             
-            response = self._get_with_retry(url, params)
-            data = response.json()
+            response = await self._get_with_retry(url, params)
             
-            if "items" in data:
-                return [self._convert_to_subject(item) for item in data["items"]]
+            if "items" in response:
+                return [self._convert_to_subject(item) for item in response["items"]]
             return []
 
-        except requests.exceptions.RequestException as e:
-            print(f"HTTP error occurred: {e}")
-            raise HTTPException(status_code=503, detail="豆瓣API访问失败")
         except Exception as e:
-            print(f"Error getting hot list: {e}")
+            logger.error(f"获取豆瓣热门列表失败: {e}")
             raise HTTPException(status_code=500, detail="获取豆瓣热门列表失败")
 
 
@@ -174,7 +173,7 @@ async def get_douban_hot_list(
     count: int = Query(default=50, description="每页数量"),
     current_user: User = Depends(get_current_user)
 ) -> Response[List[DoubanSubject]]:
-    data = douban_service.get_hot_list(
+    data = await douban_service.get_hot_list(
         type=type,
         category=category,
         page=page,

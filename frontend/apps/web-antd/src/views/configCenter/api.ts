@@ -48,3 +48,17 @@ export async function getResourceChannelConfigApi(params: any) {
 export async function updateResourceChannelConfigApi(data: any) {
   return requestClient.put('/sysSetting/tg-resource/config', data);
 }
+
+/**
+ * 获取代理配置
+ */
+export async function getProxyConfigApi(params: any) {
+  return requestClient.get('/sysSetting/proxy/config', { params });
+}
+
+/**
+ * 更新代理配置
+ */
+export async function updateProxyConfigApi(data: any) {
+  return requestClient.put('/sysSetting/proxy/config', data);
+}

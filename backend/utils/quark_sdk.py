@@ -2,10 +2,11 @@ import re
 import json
 import time
 import random
-import requests
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Union
 from urllib.parse import quote_plus
+from loguru import logger
+from utils.http_client import http_client
 
 class QuarkSDK:
     """夸克网盘 SDK"""
@@ -39,7 +40,7 @@ class QuarkSDK:
             }
         return mparam
 
-    def _send_request(self, method: str, url: str, **kwargs) -> requests.Response:
+    async def _send_request(self, method: str, url: str, **kwargs) -> Dict[str, Any]:
         """发送 HTTP 请求"""
         headers = {
             "cookie": self.cookie,
@@ -48,7 +49,7 @@ class QuarkSDK:
         }
         
         if "headers" in kwargs:
-            headers = kwargs["headers"]
+            headers.update(kwargs["headers"])
             del kwargs["headers"]
             
         # 处理分享链接的特殊请求
@@ -82,39 +83,43 @@ class QuarkSDK:
             del headers["cookie"]
 
         try:
-            response = requests.request(method, url, headers=headers, **kwargs)
+            response = await http_client.request(
+                method=method,
+                url=url,
+                headers=headers,
+                **kwargs
+            )
+            if isinstance(response, str):
+                return json.loads(response)
             return response
         except Exception as e:
-            print(f"请求异常：{str(e)}")
-            fake_response = requests.Response()
-            fake_response.status_code = 500
-            fake_response._content = json.dumps({
+            logger.error(f"请求异常：{str(e)}")
+            return {
                 "status": 500,
                 "code": 1,
                 "message": f"请求异常：{str(e)}"
-            }).encode()
-            return fake_response
+            }
 
-    def init(self) -> Union[Dict[str, Any], bool]:
+    async def init(self) -> Union[Dict[str, Any], bool]:
         """初始化账号信息"""
-        account_info = self.get_account_info()
+        account_info = await self.get_account_info()
         if account_info:
             self.is_active = True
             self.nickname = account_info["nickname"]
             return account_info
         return False
 
-    def get_account_info(self) -> Union[Dict[str, Any], bool]:
+    async def get_account_info(self) -> Union[Dict[str, Any], bool]:
         """获取账号信息"""
         url = "https://pan.quark.cn/account/info"
-        response = self._send_request(
+        response = await self._send_request(
             "GET",
             url,
             params={"fr": "pc", "platform": "pc"}
-        ).json()
+        )
         return response.get("data", False)
 
-    def get_file_list(self, dir_id: str = "0", page: int = 1, size: int = 50) -> Dict[str, Any]:
+    async def get_file_list(self, dir_id: str = "0", page: int = 1, size: int = 50) -> Dict[str, Any]:
         """
         获取文件列表
         :param dir_id: 文件夹 ID，默认为根目录
@@ -132,9 +137,9 @@ class QuarkSDK:
             "_fetch_sub_dirs": "0",
             "_sort": "file_type:asc,updated_at:desc"
         }
-        return self._send_request("GET", url, params=params).json()
+        return await self._send_request("GET", url, params=params)
 
-    def search_files(self, keyword: str, dir_id: str = "0") -> Dict[str, Any]:
+    async def search_files(self, keyword: str, dir_id: str = "0") -> Dict[str, Any]:
         """
         搜索文件
         :param keyword: 搜索关键词
@@ -147,9 +152,9 @@ class QuarkSDK:
             "pdir_fid": dir_id,
             "query": keyword
         }
-        return self._send_request("GET", url, params=params).json()
+        return await self._send_request("GET", url, params=params)
 
-    def get_download_url(self, file_id: str) -> Dict[str, Any]:
+    async def get_download_url(self, file_id: str) -> Dict[str, Any]:
         """
         获取文件下载链接
         :param file_id: 文件 ID
@@ -157,10 +162,9 @@ class QuarkSDK:
         url = f"{self.BASE_URL}/1/clouddrive/file/download"
         params = {"pr": "ucpro", "fr": "pc"}
         data = {"fids": [file_id]}
-        response = self._send_request("POST", url, params=params, json=data)
-        return response.json()
+        return await self._send_request("POST", url, params=params, json=data)
 
-    def create_folder(self, name: str, parent_id: str = "0") -> Dict[str, Any]:
+    async def create_folder(self, name: str, parent_id: str = "0") -> Dict[str, Any]:
         """
         创建文件夹
         :param name: 文件夹名称
@@ -173,9 +177,9 @@ class QuarkSDK:
             "file_name": name,
             "dir_init_lock": False
         }
-        return self._send_request("POST", url, params=params, json=data).json()
+        return await self._send_request("POST", url, params=params, json=data)
 
-    def rename_file(self, file_id: str, new_name: str) -> Dict[str, Any]:
+    async def rename_file(self, file_id: str, new_name: str) -> Dict[str, Any]:
         """
         重命名文件/文件夹
         :param file_id: 文件/文件夹 ID
@@ -184,9 +188,9 @@ class QuarkSDK:
         url = f"{self.BASE_URL}/1/clouddrive/file/rename"
         params = {"pr": "ucpro", "fr": "pc"}
         data = {"fid": file_id, "file_name": new_name}
-        return self._send_request("POST", url, params=params, json=data).json()
+        return await self._send_request("POST", url, params=params, json=data)
 
-    def delete_files(self, file_ids: List[str]) -> Dict[str, Any]:
+    async def delete_files(self, file_ids: List[str]) -> Dict[str, Any]:
         """
         删除文件/文件夹
         :param file_ids: 文件/文件夹 ID 列表
@@ -198,9 +202,9 @@ class QuarkSDK:
             "filelist": file_ids,
             "exclude_fids": []
         }
-        return self._send_request("POST", url, params=params, json=data).json()
+        return await self._send_request("POST", url, params=params, json=data)
 
-    def get_share_info(self, share_id: str, password: str = "") -> Dict[str, Any]:
+    async def get_share_info(self, share_id: str, password: str = "") -> Dict[str, Any]:
         """
         获取分享信息
         :param share_id: 分享 ID
@@ -209,9 +213,9 @@ class QuarkSDK:
         url = f"{self.BASE_URL}/1/clouddrive/share/sharepage/token"
         params = {"pr": "ucpro", "fr": "pc"}
         data = {"pwd_id": share_id, "passcode": password}
-        return self._send_request("POST", url, params=params, json=data).json()
+        return await self._send_request("POST", url, params=params, json=data)
 
-    def get_share_file_list(self, share_id: str, token: str, dir_id: str = "0") -> Dict[str, Any]:
+    async def get_share_file_list(self, share_id: str, token: str, dir_id: str = "0") -> Dict[str, Any]:
         """
         获取分享文件列表
         :param share_id: 分享 ID
@@ -228,9 +232,9 @@ class QuarkSDK:
             "_fetch_share": "1",
             "_fetch_total": "1"
         }
-        return self._send_request("GET", url, params=params).json()
+        return await self._send_request("GET", url, params=params)
 
-    def save_share_files(self, share_id: str, token: str, file_ids: List[str],
+    async def save_share_files(self, share_id: str, token: str, file_ids: List[str],
                         file_tokens: List[str], target_dir_id: str = "0") -> Dict[str, Any]:
         """
         保存分享文件
@@ -255,9 +259,9 @@ class QuarkSDK:
             "stoken": token,
             "scene": "link"
         }
-        return self._send_request("POST", url, params=params, json=data).json()
+        return await self._send_request("POST", url, params=params, json=data)
 
-    def get_task_status(self, task_id: str) -> Dict[str, Any]:
+    async def get_task_status(self, task_id: str) -> Dict[str, Any]:
         """
         获取任务状态
         :param task_id: 任务 ID
@@ -270,7 +274,7 @@ class QuarkSDK:
             "__dt": int(random.uniform(1, 5) * 60 * 1000),
             "__t": datetime.now().timestamp()
         }
-        return self._send_request("GET", url, params=params).json()
+        return await self._send_request("GET", url, params=params)
 
     def wait_task_complete(self, task_id: str, timeout: int = 60) -> Dict[str, Any]:
         """

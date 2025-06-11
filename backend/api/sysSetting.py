@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from api.deps import get_current_user
 from models.user import User
 from schemas.response import Response
-from schemas.sysSetting import SysSettingUpdate, TGChannel, TGResourceConfig
+from schemas.sysSetting import SysSettingUpdate, TGChannel, TGResourceConfig, ProxyConfig
 from utils.config_manager import config_manager
 from typing import Dict, Any, List, Optional
 
@@ -25,7 +25,12 @@ async def get_system_config(current_user: User = Depends(get_current_user)):
             "alist_api_key": "your-api-key",
             "tianyiAccount": "your-account",
             "tianyiPassword": "your-password",
-            "quarkCookie": "your-cookie"
+            "quarkCookie": "your-cookie",
+            "use_proxy": false,
+            "proxy_host": "",
+            "proxy_port": "",
+            "proxy_username": "",
+            "proxy_password": ""
         }
     }
     ```
@@ -50,7 +55,12 @@ async def update_system_config(
         "alist_api_key": "your-api-key",
         "tianyiAccount": "your-account",
         "tianyiPassword": "your-password",
-        "quarkCookie": "your-cookie"
+        "quarkCookie": "your-cookie",
+        "use_proxy": false,
+        "proxy_host": "",
+        "proxy_port": "",
+        "proxy_username": "",
+        "proxy_password": ""
     }
     ```
     """
@@ -70,12 +80,85 @@ async def update_system_config(
         new_config["tianyiPassword"] = config.tianyiPassword
     if config.quarkCookie is not None:
         new_config["quarkCookie"] = config.quarkCookie
+    if config.use_proxy is not None:
+        new_config["use_proxy"] = config.use_proxy
+    if config.proxy_host is not None:
+        new_config["proxy_host"] = config.proxy_host
+    if config.proxy_port is not None:
+        new_config["proxy_port"] = config.proxy_port
+    if config.proxy_username is not None:
+        new_config["proxy_username"] = config.proxy_username
+    if config.proxy_password is not None:
+        new_config["proxy_password"] = config.proxy_password
         
     config_manager.update_config(new_config)
     
     # 返回更新后的配置
     updated_config = config_manager.get_config()
     return Response(data=updated_config)
+
+@router.get("/proxy/config", response_model=Response[ProxyConfig])
+async def get_proxy_config(current_user: User = Depends(get_current_user)):
+    """
+    获取代理配置
+    
+    返回示例:
+    ```json
+    {
+        "code": 200,
+        "message": "操作成功",
+        "data": {
+            "use_proxy": false,
+            "proxy_host": "",
+            "proxy_port": "",
+            "proxy_username": "",
+            "proxy_password": ""
+        }
+    }
+    ```
+    """
+    config = config_manager.get_config()
+    proxy_config = ProxyConfig(
+        use_proxy=config.get("use_proxy", False),
+        proxy_host=config.get("proxy_host", ""),
+        proxy_port=config.get("proxy_port", ""),
+        proxy_username=config.get("proxy_username", ""),
+        proxy_password=config.get("proxy_password", "")
+    )
+    return Response(data=proxy_config)
+
+@router.put("/proxy/config", response_model=Response[ProxyConfig])
+async def update_proxy_config(
+    config: ProxyConfig,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    更新代理配置
+    
+    请求示例:
+    ```json
+    {
+        "use_proxy": false,
+        "proxy_host": "",
+        "proxy_port": "",
+        "proxy_username": "",
+        "proxy_password": ""
+    }
+    ```
+    """
+    # 更新配置文件
+    new_config = {
+        "use_proxy": config.use_proxy,
+        "proxy_host": config.proxy_host,
+        "proxy_port": config.proxy_port,
+        "proxy_username": config.proxy_username,
+        "proxy_password": config.proxy_password
+    }
+    
+    config_manager.update_config(new_config)
+    
+    # 返回更新后的配置
+    return Response(data=config)
 
 @router.get("/tg-resource/config", response_model=Response[TGResourceConfig])
 async def get_tg_resource_config(
