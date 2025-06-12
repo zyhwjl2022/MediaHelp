@@ -23,6 +23,7 @@ const shareUrl = computed(() => {
 });
 const fileList = ref<any[]>([]);
 const selectedFile = ref<any[]>([]);
+const stoken = ref<string>('');
 const paths = ref<any[]>([]);
 const fileList2 = ref<any[]>([]);
 const paths2 = ref<any[]>([]);
@@ -97,6 +98,7 @@ const getShareFileList = async (dir: any = {}) => {
     });
     fileList.value = res.list ?? [];
     paths.value = res.paths ?? [];
+    stoken.value = res?.share_info?.token ?? '';
   }
 };
 
@@ -165,6 +167,7 @@ const onOk = async () => {
       file_tokens,
       target_dir,
       pdir_fid,
+      stoken: stoken.value,
     });
   }
 };

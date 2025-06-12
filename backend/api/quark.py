@@ -18,6 +18,7 @@ class QuarkFilePaths(BaseModel):
 class SaveShareFilesRequest(BaseModel):
     """保存分享文件请求模型"""
     share_url: str = Field(..., description="分享链接")
+    stoken: str = Field(default="", description="分享token")
     target_dir: str = Field(default="0", description="目标文件夹ID")
     pdir_fid: str = Field(default="0", description="来源文件夹ID")
     file_ids: List[str] = Field(default=[], description="要保存的文件ID列表，为空则保存所有文件")
@@ -353,7 +354,7 @@ async def save_shared_files(
                 message=share_response.get("message", "获取分享信息失败")
             )
             
-        token = share_response.get("data", {}).get("stoken")
+        token = request.stoken
         if not token:
             return Response(code=400, message="获取分享token失败")
             
@@ -518,6 +519,7 @@ async def get_share_files(
                 message=share_response.get("message", "获取分享信息失败")
             )
         token = share_response.get("data", {}).get("stoken")
+        logger.info(f"获取分享token成功：{token}")
         if not token:
             return Response(code=400, message="获取分享token失败")
         # 获取分享文件列表
