@@ -4,7 +4,6 @@ import time
 import random
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Union
-from urllib.parse import quote_plus
 from loguru import logger
 from utils.http_client import http_client
 
@@ -13,7 +12,7 @@ class QuarkSDK:
     
     BASE_URL = "https://drive-pc.quark.cn"
     BASE_URL_APP = "https://drive-m.quark.cn"
-    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) quark-cloud-drive/3.14.2 Chrome/112.0.5615.165 Electron/24.1.3.8 Safari/537.36 Channel/pckk_other_ch"
+    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 Edg/137.0.0.0"
 
     def __init__(self, cookie: str = ""):
         """
@@ -46,6 +45,9 @@ class QuarkSDK:
             "cookie": self.cookie,
             "content-type": "application/json",
             "user-agent": self.USER_AGENT,
+            "referer": "https://pan.quark.cn/",
+            "origin": "https://pan.quark.cn",
+            "priority": "u=1, i",
         }
         
         if "headers" in kwargs:
@@ -229,13 +231,21 @@ class QuarkSDK:
             "pwd_id": share_id,
             "stoken": token,
             "pdir_fid": dir_id,
-            "_fetch_share": "1",
-            "_fetch_total": "1"
+            "force": 0,
+            "_page": 1,
+            "_size": 50,
+            "_fetch_banner": 0,
+            "_fetch_share": 0,
+            "_fetch_total": 1,
+            "_sort": "file_type:asc,file_name:asc",
+            "__dt": int(random.uniform(1, 5) * 60 * 1000),
+            "__t": int(datetime.now().timestamp()),
+            "_sort": "file_type:asc,updated_at:desc",
         }
         return await self._send_request("GET", url, params=params)
 
     async def save_share_files(self, share_id: str, token: str, file_ids: List[str],
-                        file_tokens: List[str], target_dir_id: str = "0") -> Dict[str, Any]:
+                        file_tokens: List[str], target_dir_id: str = "0", pdir_fid: str = "0") -> Dict[str, Any]:
         """
         保存分享文件
         :param share_id: 分享 ID
@@ -248,17 +258,24 @@ class QuarkSDK:
         params = {
             "pr": "ucpro",
             "fr": "pc",
+            "uc_param_str": "",
+            "app": "clouddrive",
             "__dt": int(random.uniform(1, 5) * 60 * 1000),
-            "__t": datetime.now().timestamp()
+            "__t": int(datetime.now().timestamp())
         }
         data = {
             "fid_list": file_ids,
+            "exclude_fids": [],
             "fid_token_list": file_tokens,
             "to_pdir_fid": target_dir_id,
+            "pdir_save_all": False,
+            "pdir_fid": pdir_fid,
             "pwd_id": share_id,
             "stoken": token,
             "scene": "link"
         }
+        logger.info(f"保存分享文件参数：{data}")
+        logger.info(f"保存分享文件参数：{params}")
         return await self._send_request("POST", url, params=params, json=data)
 
     async def get_task_status(self, task_id: str) -> Dict[str, Any]:
@@ -275,6 +292,29 @@ class QuarkSDK:
             "__t": datetime.now().timestamp()
         }
         return await self._send_request("GET", url, params=params)
+
+    async def get_fids(self, file_paths: List[str]) -> List[Dict[str, Any]]:
+        """
+        获取文件路径对应的 fid
+        :param file_paths: 文件路径列表
+        :return: 文件路径和 fid 的对应关系列表
+        """
+        all_fids = []
+        while True:
+            url = f"{self.BASE_URL}/1/clouddrive/file/info/path_list"
+            params = {"pr": "ucpro", "fr": "pc"}
+            data = {"file_path": file_paths[:50], "namespace": "0"}
+            response = await self._send_request("POST", url, params=params, json=data)
+            if response.get("code") == 0:
+                all_fids.extend(response.get("data", []))
+                file_paths = file_paths[50:]
+            else:
+                logger.error(f"获取目录ID失败：{response.get('message')}")
+                break
+            if len(file_paths) == 0:
+                break
+                
+        return all_fids
 
     def wait_task_complete(self, task_id: str, timeout: int = 60) -> Dict[str, Any]:
         """
@@ -319,8 +359,9 @@ class QuarkSDK:
         matches = re.findall(r"/(\w{32})-?([^/]+)?", share_url)
         for match in matches:
             fid = match[0]
-            name = quote_plus(match[1]).replace("*101", "-") if match[1] else None
+            name = match[1].replace("*101", "-") if match[1] else None
             info["paths"].append({"fid": fid, "name": name})
             info["dir_id"] = fid  # 使用最后一个 ID 作为目录 ID
             
         return info 
+    

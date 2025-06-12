@@ -13,3 +13,9 @@ export const MdiGoogle = createIconifyIcon('mdi:google');
 export const MdiQqchat = createIconifyIcon('mdi:qqchat');
 
 export const MdiFolder = createIconifyIcon('mdi:folder');
+
+export const MdiHome = createIconifyIcon('mdi:home');
+
+export const MdiFile = createIconifyIcon('mdi:file');
+
+export const MdiBack = createIconifyIcon('stash:arrow-reply-solid');

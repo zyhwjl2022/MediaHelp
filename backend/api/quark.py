@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Body
-from typing import List, Optional, Dict, Any, Union, Tuple
+from typing import List, Optional, Dict, Union, Tuple
+
+from pydantic import BaseModel, Field
 from api.deps import get_current_user
 from models.user import User
 from schemas.response import Response
@@ -8,6 +10,18 @@ from utils.config_manager import config_manager
 from loguru import logger
 
 router = APIRouter(prefix="/quark", tags=["夸克网盘"])
+
+class QuarkFilePaths(BaseModel):
+    """文件路径请求模型"""
+    file_paths: List[str] = Field(default=[], description="文件路径列表")
+
+class SaveShareFilesRequest(BaseModel):
+    """保存分享文件请求模型"""
+    share_url: str = Field(..., description="分享链接")
+    target_dir: str = Field(default="0", description="目标文件夹ID")
+    pdir_fid: str = Field(default="0", description="来源文件夹ID")
+    file_ids: List[str] = Field(default=[], description="要保存的文件ID列表，为空则保存所有文件")
+    file_tokens: List[str] = Field(default=[], description="要保存的文件token列表，需要与file_ids一一对应")
 
 # 全局的 QuarkHelper 实例缓存
 quark_helpers: Dict[str, QuarkHelper] = {}
@@ -248,11 +262,53 @@ async def delete_files(
         logger.error(f"删除失败: {str(e)}")
         return Response(code=-1, message=f"删除失败: {str(e)}")
 
+@router.post("/fids")
+async def get_fids(
+    file_paths: QuarkFilePaths,
+    user: User = Depends(get_current_user)
+):
+    """
+    获取文件路径对应的 fid
+    
+    参数:
+    - file_paths: 文件路径列表，例如 ["/文件夹1", "/文件夹1/文件夹2"]
+    
+    返回示例:
+    ```json
+    {
+        "code": 200,
+        "message": "操作成功",
+        "data": [
+            {
+                "file_path": "/文件夹1",
+                "fid": "文件夹1的ID"
+            },
+            {
+                "file_path": "/文件夹1/文件夹2",
+                "fid": "文件夹2的ID"
+            }
+        ]
+    }
+    ```
+    """
+    try:
+        helper, error = await get_quark_helper(user)
+        if error:
+            return error
+        logger.info(f"获取文件ID参数1：{file_paths.file_paths}")
+        fids = await helper.get_fids(file_paths.file_paths)
+        return Response(
+            code=200,
+            message="操作成功",
+            data=fids
+        )
+    except Exception as e:
+        logger.error(f"获取文件ID失败: {str(e)}")
+        return Response(code=-1, message=f"获取文件ID失败: {str(e)}")
+
 @router.post("/share/save")
 async def save_shared_files(
-    share_url: str = Body(..., description="分享链接"),
-    password: str = Body(default="", description="分享密码"),
-    target_dir: str = Body(default="0", description="目标文件夹ID"),
+    request: SaveShareFilesRequest,
     user: User = Depends(get_current_user)
 ):
     """
@@ -260,17 +316,81 @@ async def save_shared_files(
     
     参数:
     - share_url: 分享链接
-    - password: 分享密码（可选）
     - target_dir: 保存到的目标文件夹ID（可选）
+    - file_ids: 要保存的文件ID列表，为空则保存所有文件
+    - file_tokens: 要保存的文件token列表，需要与file_ids一一对应
+    
+    请求示例:
+    ```json
+    {
+        "share_url": "https://pan.quark.cn/s/xxxxxx",
+        "password": "1234",
+        "target_dir": "0",
+        "file_ids": ["file_id1", "file_id2"],
+        "file_tokens": ["token1", "token2"]
+    }
+    ```
     """
     try:
         helper, error = await get_quark_helper(user)
         if error:
             return error
             
-        success = await helper.save_shared_files(share_url, password, target_dir)
-        if not success:
-            return Response(code=400, message="保存分享文件失败")
+        # 解析分享链接
+        share_info = helper.sdk.extract_share_info(request.share_url)
+        if not share_info["share_id"]:
+            return Response(code=400, message="无效的分享链接")
+            
+        # 获取分享信息
+        share_response = await helper.sdk.get_share_info(
+            share_info["share_id"], 
+             share_info["password"]
+        )
+        
+        if share_response.get("code") != 0:
+            return Response(
+                code=400, 
+                message=share_response.get("message", "获取分享信息失败")
+            )
+            
+        token = share_response.get("data", {}).get("stoken")
+        if not token:
+            return Response(code=400, message="获取分享token失败")
+            
+        # 如果没有指定要保存的文件，则获取所有文件
+        if not request.file_ids:
+            file_list = await helper.sdk.get_share_file_list(
+                share_info["share_id"],
+                token,
+                share_info["dir_id"]
+            )
+            
+            if file_list.get("code") != 0:
+                return Response(
+                    code=400, 
+                    message=file_list.get("message", "获取分享文件列表失败")
+                )
+                
+            files = file_list.get("data", {}).get("list", [])
+            request.file_ids = [f["fid"] for f in files]
+            request.file_tokens = [f.get("share_fid_token", "") for f in files]
+            
+        # 保存文件
+        save_response = await helper.sdk.save_share_files(
+            share_info["share_id"],
+            token,
+            request.file_ids,
+            request.file_tokens,
+            request.target_dir,
+            request.pdir_fid
+        )
+        
+        if save_response.get("code") != 0:
+            return Response(
+                code=400, 
+                message=save_response.get("message", "保存分享文件失败")
+            )
+            
         return Response(code=200, message="操作成功")
     except Exception as e:
         logger.error(f"保存分享文件失败: {str(e)}")
@@ -342,8 +462,6 @@ async def get_share_info(
 @router.get("/share/files")
 async def get_share_files(
     share_url: str = Query(..., description="分享链接"),
-    password: str = Query(default="", description="分享密码"),
-    dir_id: str = Query(default="0", description="文件夹ID"),
     user: User = Depends(get_current_user)
 ):
     """
@@ -391,7 +509,7 @@ async def get_share_files(
         # 获取分享信息
         share_response = await helper.sdk.get_share_info(
             share_info["share_id"], 
-            password or share_info["password"]
+            share_info["password"]
         )
         
         if share_response.get("code") != 0:
@@ -402,12 +520,11 @@ async def get_share_files(
         token = share_response.get("data", {}).get("stoken")
         if not token:
             return Response(code=400, message="获取分享token失败")
-            
         # 获取分享文件列表
         file_list = await helper.sdk.get_share_file_list(
             share_info["share_id"],
             token,
-            dir_id or share_info["dir_id"]
+            share_info["dir_id"]
         )
         
         if file_list.get("code") != 0:
@@ -415,12 +532,13 @@ async def get_share_files(
                 code=400, 
                 message=file_list.get("message", "获取分享文件列表失败")
             )
-            
+        logger.info(f"获取分享文件列表成功：{file_list}")
         return Response(
             code=200,
             message="操作成功",
             data={
                 "list": file_list.get("data", {}).get("list", []),
+                "paths": share_info["paths"],
                 "share_info": {
                     "share_id": share_info["share_id"],
                     "token": token

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onActivated, onMounted, ref } from 'vue';
+import { nextTick, onActivated, onMounted, ref } from 'vue';
 
 import { Button, Form, FormItem, Input, Select } from 'ant-design-vue';
 
@@ -62,9 +62,10 @@ const filterResource = () => {
 };
 
 const onItemSave = (item: any) => {
-  open.value = true;
   currentItem.value = item;
-  console.error(item);
+  nextTick(() => {
+    open.value = true;
+  });
 };
 
 onMounted(() => {

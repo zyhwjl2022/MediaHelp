@@ -34,6 +34,7 @@ class QuarkHelper:
         all_files = []
         page = 1
         while True:
+            logger.info(f"获取文件列表参数：{dir_id}, {page}")
             response = await self.sdk.get_file_list(dir_id=dir_id, page=page)
             if response.get("code") != 0:
                 logger.error(f"获取文件列表失败：{response.get('message')}")
@@ -126,6 +127,14 @@ class QuarkHelper:
             logger.error(f"删除文件失败：{response.get('message')}")
             return False
         return True
+
+    async def get_fids(self, file_paths: str) -> List[Dict[str, Any]]:
+        """
+        获取文件路径对应的 fid
+        :param file_paths: 文件路径列表
+        :return: 文件路径和 fid 的对应关系列表，每个元素包含 file_path 和 fid
+        """
+        return await self.sdk.get_fids(file_paths)
 
     async def save_shared_files(self, share_url: str, password: str = "", 
                               target_dir: str = "0") -> bool:
