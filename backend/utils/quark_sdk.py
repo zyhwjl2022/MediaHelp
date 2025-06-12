@@ -45,9 +45,16 @@ class QuarkSDK:
             "cookie": self.cookie,
             "content-type": "application/json",
             "user-agent": self.USER_AGENT,
-            "referer": "https://pan.quark.cn/",
-            "origin": "https://pan.quark.cn",
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+            "content-type": "application/json",
             "priority": "u=1, i",
+            "sec-ch-ua": '"Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site",
         }
         
         if "headers" in kwargs:
@@ -228,19 +235,19 @@ class QuarkSDK:
         params = {
             "pr": "ucpro",
             "fr": "pc",
+            "uc_param_str": "",
             "pwd_id": share_id,
             "stoken": token,
             "pdir_fid": dir_id,
             "force": 0,
             "_page": 1,
             "_size": 50,
-            "_fetch_banner": 0,
-            "_fetch_share": 0,
+            "_fetch_banner": 1,
+            "_fetch_share": 1,
             "_fetch_total": 1,
-            "_sort": "file_type:asc,file_name:asc",
+            "_sort": "file_type:asc,updated_at:desc",
             "__dt": int(random.uniform(1, 5) * 60 * 1000),
             "__t": int(datetime.now().timestamp()),
-            "_sort": "file_type:asc,updated_at:desc",
         }
         return await self._send_request("GET", url, params=params)
 
@@ -259,13 +266,12 @@ class QuarkSDK:
             "pr": "ucpro",
             "fr": "pc",
             "uc_param_str": "",
-            "app": "clouddrive",
+            # "app": "clouddrive",
             "__dt": int(random.uniform(1, 5) * 60 * 1000),
             "__t": int(datetime.now().timestamp())
         }
         data = {
             "fid_list": file_ids,
-            "exclude_fids": [],
             "fid_token_list": file_tokens,
             "to_pdir_fid": target_dir_id,
             "pdir_save_all": False,
