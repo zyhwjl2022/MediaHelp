@@ -1,7 +1,7 @@
 # MediaHelper
 
 <div align="center">
-    <img src="/frontend/apps/web-antd/public/icon.png" alt="MediaHelper Logo" width="200" height="200" />
+    <img src="/frontend/apps/web-antd/public/icon.png" alt="MediaHelper Logo" width="200" height="150" />
     <h3>🎬 一站式媒体资源管理助手</h3>
     <p>基于 Vue 3 + TypeScript + Naive UI + SSR 的现代化媒体资源管理系统</p>
 </div>
