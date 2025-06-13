@@ -87,6 +87,7 @@ class HttpClient:
         
         for i in range(retry_times):
             try:
+                # logger.info(f"请求参数: {method} {url} {params} {headers} {json} {data}")
                 async with self._session.request(
                     method=method,
                     url=url,
@@ -106,9 +107,12 @@ class HttpClient:
                     
                     content_type = response.headers.get('content-type', '').lower()
                     if 'application/json' in content_type:
-                        return await response.json()
+                        result = await response.json()
+                        # logger.info(f"请求响应: {result}")
+                        return result
                     else:
-                        return await response.text()
+                        result = await response.text()
+                        return result
                         
             except asyncio.TimeoutError:
                 logger.warning(f"请求超时 ({i + 1}/{retry_times}): {url}")

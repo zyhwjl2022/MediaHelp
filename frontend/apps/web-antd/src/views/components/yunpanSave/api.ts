@@ -27,3 +27,24 @@ export const getQuarkFileListApi = (params: any) => {
 export const getQuarkFidsApi = (data: any) => {
   return requestClient.post('/quark/fids', data);
 };
+
+/**
+ * 189 获取文件列表
+ */
+export const getCloud189FileListApi = (data: any) => {
+  return requestClient.post('/cloud189/files', data);
+};
+
+/**
+ * 189 获取分享文件列表
+ */
+export const getCloud189ShareFileListApi = (data: any) => {
+  return requestClient.post('/cloud189/share/files', data);
+};
+
+/**
+ * 189 保存文件
+ */
+export const saveCloud189FileApi = (data: any) => {
+  return requestClient.post('/cloud189/share/save', data);
+};

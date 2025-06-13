@@ -34,7 +34,6 @@ class QuarkHelper:
         all_files = []
         page = 1
         while True:
-            logger.info(f"获取文件列表参数：{dir_id}, {page}")
             response = await self.sdk.get_file_list(dir_id=dir_id, page=page)
             if response.get("code") != 0:
                 logger.error(f"获取文件列表失败：{response.get('message')}")

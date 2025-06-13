@@ -296,7 +296,6 @@ async def get_fids(
         helper, error = await get_quark_helper(user)
         if error:
             return error
-        logger.info(f"获取文件ID参数1：{file_paths.file_paths}")
         fids = await helper.get_fids(file_paths.file_paths)
         return Response(
             code=200,
@@ -392,7 +391,7 @@ async def save_shared_files(
                 message=save_response.get("message", "保存分享文件失败")
             )
             
-        return Response(code=200, message="操作成功")
+        return Response(code=200, message="操作成功", data=save_response.get("data",{}))
     except Exception as e:
         logger.error(f"保存分享文件失败: {str(e)}")
         return Response(code=-1, message=f"保存分享文件失败: {str(e)}")
@@ -519,7 +518,6 @@ async def get_share_files(
                 message=share_response.get("message", "获取分享信息失败")
             )
         token = share_response.get("data", {}).get("stoken")
-        logger.info(f"获取分享token成功：{token}")
         if not token:
             return Response(code=400, message="获取分享token失败")
         # 获取分享文件列表
@@ -534,7 +532,6 @@ async def get_share_files(
                 code=400, 
                 message=file_list.get("message", "获取分享文件列表失败")
             )
-        logger.info(f"获取分享文件列表成功：{file_list}")
         return Response(
             code=200,
             message="操作成功",

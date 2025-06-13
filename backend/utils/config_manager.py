@@ -17,6 +17,11 @@ class ConfigManager:
         # 天翼云盘配置
         "tianyiAccount": "",  # 天翼云盘账号
         "tianyiPassword": "",  # 天翼云盘密码
+        "cloud189_session": {  # 天翼云盘session信息
+            "access_token": "",
+            "session_key": "",
+            "expires_in": 0
+        },
         # 夸克网盘配置
         "quarkCookie": "",  # 夸克网盘Cookie
         # 代理配置

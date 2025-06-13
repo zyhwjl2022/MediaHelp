@@ -59,14 +59,10 @@ class TGResourceSDK:
         cloud_type = ""
         config = self._get_config()
         
-        logger.info(f"开始提取云盘链接，配置: {config['cloudPatterns']}")
-        
         for cloud_name, pattern in config["cloudPatterns"].items():
-            logger.info(f"尝试匹配 {cloud_name} 云盘链接，使用模式: {pattern}")
             try:
                 matches = re.findall(pattern, text)
                 if matches:
-                    logger.info(f"找到 {cloud_name} 云盘链接: {matches}")
                     links.extend(matches)
                     if not cloud_type:
                         cloud_type = cloud_name
@@ -75,18 +71,15 @@ class TGResourceSDK:
                 continue
         
         unique_links = list(set(links))
-        logger.info(f"最终提取结果 - 链接: {unique_links}, 云盘类型: {cloud_type}")
         return unique_links, cloud_type
 
     async def _search_in_web(self, url: str) -> tuple[List[ResourceItem], str]:
         """在网页中搜索资源"""
         try:
-            logger.info(f"开始执行搜索任务: {url}")
             config = self._get_config()
             
             try:
                 html = await http_client.get(f"{config['telegram']['baseUrl']}{url}")
-                logger.info(f"获取到响应: {url}")
             except Exception as e:
                 logger.error(f"请求失败: {url}", exc_info=e)
                 raise
@@ -138,15 +131,12 @@ class TGResourceSDK:
                     text = a.get_text()
                     if href:
                         links.append(href)
-                        logger.info(f"找到原始链接: {href}")
                     if text and text.startswith("#"):
                         tags.append(text)
                 
                 # 提取云盘链接
                 all_links = " ".join(links)
-                logger.info(f"准备提取云盘链接，原始链接文本: {all_links}")
                 cloud_links, cloud_type = self._extract_cloud_links(all_links)
-                logger.info(f"提取结果 - 云盘链接: {cloud_links}, 类型: {cloud_type}")
                 
                 # 创建资源项
                 item: ResourceItem = {
@@ -188,7 +178,6 @@ class TGResourceSDK:
             
             # 并行搜索所有频道
             tasks = []
-            logger.info(f"开始创建搜索任务，频道列表长度: {len(channel_list)}")
             for channel in channel_list:
                 message_id_params = f"before={message_id}" if message_id else ""
                 url = f"/{channel['id']}"
@@ -200,22 +189,17 @@ class TGResourceSDK:
                             url += "&"
                     if message_id:
                         url += message_id_params
-                logger.info(f"创建搜索任务: {url}")
                 tasks.append(self._search_in_web(url))
             
-            logger.info(f"准备执行 {len(tasks)} 个搜索任务")
             # 等待所有搜索完成
             try:
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 for i, result in enumerate(results):
                     if isinstance(result, Exception):
                         logger.error(f"任务 {i} 执行失败: {str(result)}")
-                    else:
-                        logger.info(f"任务 {i} 执行成功")
                 
                 # 过滤掉异常结果
                 results = [r for r in results if not isinstance(r, Exception)]
-                logger.info(f"所有搜索任务完成，成功获得 {len(results)} 个结果")
             except Exception as e:
                 logger.error("执行任务时发生错误", exc_info=e)
                 raise

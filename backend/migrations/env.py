@@ -7,8 +7,7 @@ from crud.config import settings
 
 # 导入配置和模型
 from models.base import Base
-import models.user  # 导入所有模型以确保它们被注册
-import models.sysSetting   # 导入所有模型以确保它们被注册
+import models.user  # 导入所有模型以确保它们被注册  # 导入所有模型以确保它们被注册
 
 # this is the Alembic Config object
 config = context.config
