@@ -1,0 +1,8 @@
+{
+  "i18n-ally.localesPaths": [
+    "frontend/packages/locales",
+    "frontend/apps/web-antd/src/locales",
+    "frontend/packages/locales/src/langs",
+    "frontend/apps/web-antd/src/locales/langs"
+  ]
+}
