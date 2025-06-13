@@ -9,8 +9,6 @@
 ## ✨ 特性
 
 - 🎯 **现代化技术栈**：使用 Vue 3、TypeScript、Vite 等最新技术
-- 🎨 **精美 UI**：基于 Naive UI 的现代化界面设计
-- 🚀 **服务端渲染**：支持 SSR，提供更好的首屏加载体验和 SEO
 - 📱 **响应式设计**：完美适配各种设备屏幕
 - 🔐 **安全可靠**：完整的用户认证和授权系统
 - 🎭 **媒体管理**：支持多种媒体格式的管理和预览
@@ -88,7 +86,6 @@ MediaHelper/
 - Vue 3 - 渐进式 JavaScript 框架
 - TypeScript - JavaScript 的超集
 - Vite - 下一代前端构建工具
-- Naive UI - 高质量 Vue 组件库
 - Vue Router - Vue.js 官方路由
 - Pinia - Vue 状态管理库
 - Tailwind CSS - 实用优先的 CSS 框架
