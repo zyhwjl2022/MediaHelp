@@ -3,6 +3,8 @@ import { onMounted, ref, watch } from 'vue';
 
 import { Card, Flex } from 'ant-design-vue';
 
+import { router } from '#/router';
+
 const props = defineProps<{
   api: (params: any) => Promise<any>;
   params: Record<string, any>;
@@ -21,11 +23,25 @@ watch(props.params, () => {
     mediaList.value = _res;
   });
 });
+
+const handleClick = (item: any) => {
+  router.push({
+    path: '/resource',
+    query: {
+      name: item.title,
+    },
+  });
+};
 </script>
 
 <template>
   <Flex wrap="wrap" gap="middle" class="m-[20px]">
-    <Card v-for="item in mediaList" :key="item.id" class="w-[160px]">
+    <Card
+      v-for="item in mediaList"
+      :key="item.id"
+      class="w-[160px]"
+      @click="handleClick(item)"
+    >
       <template #cover>
         <img
           :src="item.cover"

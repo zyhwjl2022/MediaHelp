@@ -10,6 +10,9 @@ import logging
 from crud.config import settings
 from api.main import api_router
 from utils.exceptions import APIException, api_exception_handler, validation_exception_handler, http_exception_handler, create_error_response
+from utils.scheduler import task_scheduler
+import asyncio
+from contextlib import asynccontextmanager
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     if route.tags:
@@ -55,6 +58,26 @@ def setup_logging():
         _logger.propagate = False
         _logger.addHandler(InterceptHandler())
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    应用程序生命周期管理
+    """
+    # 启动前的操作
+    try:
+        # 启动定时任务调度器
+        scheduler_task = asyncio.create_task(task_scheduler.start())
+        logger.info("应用程序启动，定时任务调度器已启动")
+        yield
+    finally:
+        # 关闭时的操作
+        await task_scheduler.stop()
+        try:
+            await asyncio.wait_for(scheduler_task, timeout=5.0)
+        except asyncio.TimeoutError:
+            logger.warning("定时任务调度器关闭超时")
+        logger.info("应用程序关闭，定时任务调度器已停止")
+
 def init_app():
     # 初始化日志
     setup_logging()
@@ -66,6 +89,7 @@ def init_app():
         version=settings.app_config["version"],
         debug=settings.app_config["debug"],
         generate_unique_id_function=custom_generate_unique_id,
+        lifespan=lifespan
     )
 
     # 添加CORS中间件
@@ -83,6 +107,7 @@ def init_app():
     app.add_exception_handler(HTTPException, http_exception_handler)
     
     app.include_router(api_router, prefix=settings.app_config["API_V1_STR"])
+
     return app
 
 app = init_app()

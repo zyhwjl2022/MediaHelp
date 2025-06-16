@@ -186,6 +186,7 @@ class QuarkSDK:
             "file_name": name,
             "dir_init_lock": False
         }
+        logger.info(f"创建文件夹参数: {data}")  
         return await self._send_request("POST", url, params=params, json=data)
 
     async def rename_file(self, file_id: str, new_name: str) -> Dict[str, Any]:
@@ -310,6 +311,7 @@ class QuarkSDK:
             url = f"{self.BASE_URL}/1/clouddrive/file/info/path_list"
             params = {"pr": "ucpro", "fr": "pc"}
             data = {"file_path": file_paths[:50], "namespace": "0"}
+            logger.info(f"获取文件路径对应的fid参数：{data}")
             response = await self._send_request("POST", url, params=params, json=data)
             if response.get("code") == 0:
                 all_fids.extend(response.get("data", []))

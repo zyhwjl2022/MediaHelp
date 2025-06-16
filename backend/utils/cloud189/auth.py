@@ -86,6 +86,7 @@ class CloudAuthClient:
         return {
             "appKey": APP_ID,
             "accountType": ACCOUNT_TYPE,
+            # "mailSuffix": "@189.cn",
             "validateCode": "",
             "captchaToken": login_form["captcha_token"],
             "dynamicCheck": "FALSE",
@@ -148,7 +149,6 @@ class CloudAuthClient:
             # 1. 获取加密配置和登录表单
             encrypt_conf = await self.get_encrypt_conf()
             login_form = await self.get_login_form()
-            
             # 2. 构建并提交登录表单
             form_data = self._build_login_form(
                 encrypt_conf,
@@ -156,22 +156,20 @@ class CloudAuthClient:
                 username,
                 password
             )
-            
             headers = {
                 "Referer": AUTH_URL,
                 "lt": login_form["lt"],
-                "REQID": login_form["req_id"]
+                "reqid": login_form["req_id"],
+                "Content-Type": "application/x-www-form-urlencoded"
             }
             
             response = await self.request.post(
                 f"{AUTH_URL}/api/logbox/oauth2/loginSubmit.do",
                 data=form_data,
-                headers=headers
+                headers=headers,
             )
             login_result = json.loads(response)
-            
-            logger.info(f"登录结果: {login_result}")
-            
+                    
             # 3. 获取会话信息
             return await self.get_session_for_pc(redirect_url=login_result["toUrl"])
             

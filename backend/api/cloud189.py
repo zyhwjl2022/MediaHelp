@@ -1,7 +1,7 @@
 """天翼云盘API接口"""
 
 import asyncio
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 from pydantic import BaseModel
@@ -63,6 +63,10 @@ class ShareFilesRequest(BaseModel):
     share_url: str
     access_code: Optional[str] = None
     file_id: Optional[str] = None
+
+class DeleteFilesRequest(BaseModel):
+    """删除文件请求"""
+    file_ids: List[Dict[str, Any]]
 
 # 客户端缓存
 _client_cache: Optional[Cloud189Client] = None
@@ -164,7 +168,8 @@ async def create_folder(
 ):
     """创建文件夹"""
     try:
-        return await client.create_folder(req.folder_name, req.parent_id)
+        res = await client.create_folder(req.folder_name, req.parent_id)
+        return Response(data = res)
     except Cloud189Error as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -175,7 +180,8 @@ async def rename_file(
 ):
     """重命名文件"""
     try:
-        return await client.rename_file(req.file_id, req.new_name)
+        res = await client.rename_file(req.file_id, req.new_name)
+        return Response(data = res)
     except Cloud189Error as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -252,4 +258,20 @@ async def list_share_files(
         
         return Response(data=files)
     except Cloud189Error as e:
-        raise HTTPException(status_code=400, detail=str(e)) 
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/delete")
+async def delete_files(request: DeleteFilesRequest, client: Cloud189Client = Depends(get_client)):
+    """
+    删除文件或文件夹
+    :param request: 删除文件请求
+    :param client: 天翼云盘客户端
+    """
+    try:
+        result = await client.delete_files(request.file_ids)
+        return Response(code=200, message=result["message"], data=result)
+    except Cloud189Error as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"删除文件失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"删除文件失败: {str(e)}") 

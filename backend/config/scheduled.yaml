@@ -1,0 +1,8 @@
+tasks:
+- name: 夸克网盘自动保存示例
+  cron: '*/5 * * * *'
+  enabled: true
+  task: quark_auto_save
+  params:
+    shareUrl: https://pan.quark.cn/s/2b9f3b7d40b7#/list/share/4ba1f56b4b194198b9663d35e8cf66d8-凡人Xiu仙传/11f10d34bc444ccd80f49d0b2a748fa7-凡人修仙传 年番（2025）【更新中】
+    targetDir: /媒体库/动漫/凡人修仙传 (2020)/A.Record.of.a.Mortal&#39;s.Journey.to.Immortality.S01.2160p.WEB-DL.AAC.H.265-HiveWeb

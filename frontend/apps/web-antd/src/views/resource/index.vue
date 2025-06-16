@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onActivated, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
 import { Button, Form, FormItem, Input, Select } from 'ant-design-vue';
 
@@ -11,11 +12,11 @@ import ResourceCard from './components/ResourceCard.vue';
 defineOptions({
   name: 'Resource',
 });
-
+const { query } = useRoute();
 const loading = ref(false);
 const resourceList = ref<any[]>([]);
 const allResourceList = ref<any[]>([]);
-const keyword = ref('');
+const keyword = ref((query.name ?? '') as string);
 const cloudType = ref('');
 const cloudTypeList = ref<any[]>([]);
 const currentItem = ref<any>({});
@@ -69,11 +70,11 @@ const onItemSave = (item: any) => {
 };
 
 onMounted(() => {
-  loadResource();
+  loadResource((query.name ?? '') as string);
 });
 
 onActivated(() => {
-  loadResource();
+  loadResource((query.name ?? '') as string);
 });
 </script>
 

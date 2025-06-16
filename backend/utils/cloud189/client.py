@@ -162,6 +162,10 @@ class Cloud189Client:
                         "Accept": "application/json;charset=UTF-8"
                     })
 
+            elif AUTH_URL in url:
+                logger.info(f"headers: {headers}")
+                
+                
         try:
             response = await http_client.request(
                 method=method,
@@ -343,7 +347,7 @@ class Cloud189Client:
             "type": task_params["type"],
             "taskInfos": json.dumps(task_params["taskInfos"], ensure_ascii=False),  # 将taskInfos转为JSON字符串
             "targetFolderId": task_params["targetFolderId"],
-            "shareId": task_params["shareId"]
+            **({"shareId": task_params["shareId"]} if "shareId" in task_params else {})
         }    
         logger.info(f"创建批量任务参数: {form_data}")
             
@@ -378,10 +382,11 @@ class Cloud189Client:
         result = await self._send_request(
             "POST",
             f"{WEB_URL}/api/open/batch/getConflictTaskInfo.action",
-            json={
+            data={
                 "taskId": task_id,
                 "type": TASK_TYPE_SHARE_SAVE
-            }
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         return result
 
@@ -403,12 +408,13 @@ class Cloud189Client:
         result = await self._send_request(
             "POST",
             f"{WEB_URL}/api/open/batch/manageBatchTask.action",
-            json={
+            data={
                 "taskId": task_id,
                 "type": TASK_TYPE_SHARE_SAVE,
                 "targetFolderId": target_folder_id,
-                "taskInfos": task_infos
-            }
+                "taskInfos": json.dumps(task_infos, ensure_ascii=False)
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         return result
 
@@ -419,15 +425,16 @@ class Cloud189Client:
         """
         result = await self._send_request(
             "GET",
-            f"{API_URL}/open/file/searchFiles.action",
-            params={
+            f"{WEB_URL}/open/file/searchFiles.action",
+            data={
                 "folderId": ROOT_FOLDER_ID,
                 "pageSize": "1000",
                 "pageNum": "1",
                 "recursive": 1,
                 "mediaType": 0,
                 "filename": filename
-            }
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         return result
 
@@ -465,13 +472,15 @@ class Cloud189Client:
         :param folder_name: 文件夹名称
         :param parent_id: 父文件夹ID
         """
+        logger.info(f"创建文件夹参数: {folder_name}, {parent_id}")
         result = await self._send_request(
             "POST",
-            f"{API_URL}/open/file/createFolder.action",
+            f"{WEB_URL}/api/open/file/createFolder.action",
             data={
                 "parentFolderId": parent_id,
                 "folderName": folder_name
-            }
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         return result
 
@@ -483,11 +492,12 @@ class Cloud189Client:
         """
         result = await self._send_request(
             "POST",
-            f"{API_URL}/open/file/renameFile.action",
+            f"{WEB_URL}/api/open/file/renameFile.action",
             data={
                 "fileId": file_id,
                 "destFileName": new_name
-            }
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         return result
 
@@ -506,6 +516,84 @@ class Cloud189Client:
             }
         )
         return result
+
+    async def delete_files(self, file_ids: List[BatchTaskInfo]) -> Dict[str, Any]:
+        """
+        删除文件或文件夹
+        :param file_ids: 要删除的文件信息列表，格式为：[{"fileId": "xxx", "fileName": "xxx", "isFolder": 1}]
+        :return: 删除结果
+        """
+        try:
+            # 创建删除任务
+            task_params = {
+                "type": "DELETE",
+                "taskInfos": file_ids,
+                "targetFolderId": "",
+            }
+            
+            logger.info(f"创建删除任务参数: {task_params}")
+            task = await self.create_batch_task(task_params)
+            
+            # 检查任务状态
+            start_time = time.time()
+            status = await self.check_task_status(task["taskId"], "DELETE")
+            
+            # 等待任务完成
+            while status["taskStatus"] in [1, 3]:  # 1和3表示任务进行中
+                # 检查是否超时(5秒)
+                if time.time() - start_time > 5:
+                    logger.error(f"任务 {task['taskId']} 执行超时")
+                    return {
+                        "message": "文件删除失败：任务执行超时(超过5秒)",
+                        "task_id": task["taskId"],
+                        "status": status
+                    }
+                await asyncio.sleep(.5)  # 暂停0.5秒
+                status = await self.check_task_status(task["taskId"], "DELETE")
+            
+            # 检查任务结果
+            if status["taskStatus"] == 4:  # 4表示任务成功完成
+                # 检查是否有失败的文件
+                if status.get("failedCount", 0) > 0:
+                    failed_files = []
+                    for file in file_ids:
+                        # 检查文件是否还存在
+                        try:
+                            search_result = await self.search_files(file.get("fileName", ""))
+                            if any(f.get("fileId") == file.get("fileId") for f in search_result.get("fileList", [])):
+                                failed_files.append(file)
+                        except Exception:
+                            # 如果搜索失败，假设文件已被删除
+                            pass
+                    
+                    # 记录失败的文件信息
+                    if failed_files:
+                        logger.warning(
+                            f"任务 {task['taskId']} 完成，但有 {len(failed_files)} 个文件未成功删除: "
+                            f"{[f.get('fileName', '') for f in failed_files]}"
+                        )
+                        
+                    return {
+                        "message": "部分文件删除失败",
+                        "task_id": task["taskId"],
+                        "status": status,
+                        "failed_files": failed_files,
+                        "failed_count": len(failed_files)
+                    }
+                
+                # 全部成功的情况
+                return {
+                    "message": "文件删除成功",
+                    "task_id": task["taskId"],
+                    "status": status
+                }
+            else:
+                # 其他状态都视为失败
+                raise Cloud189Error(f"文件删除失败: 任务状态异常 {status['taskStatus']}")
+                
+        except Exception as e:
+            logger.error(f"删除文件失败：{str(e)}")
+            raise Cloud189Error(f"删除文件失败：{str(e)}")
 
     @staticmethod
     def parse_share_code(share_link: str) -> str:
@@ -763,3 +851,5 @@ class Cloud189Client:
         except Exception as e:
             logger.error(f"保存分享文件失败：{str(e)}")
             raise Cloud189Error(f"保存分享文件失败：{str(e)}")
+    
+    

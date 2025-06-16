@@ -24,6 +24,21 @@ class SaveShareFilesRequest(BaseModel):
     file_ids: List[str] = Field(default=[], description="要保存的文件ID列表，为空则保存所有文件")
     file_tokens: List[str] = Field(default=[], description="要保存的文件token列表，需要与file_ids一一对应")
 
+
+class CreateDirectoryRequest(BaseModel):
+    """创建文件夹请求模型"""
+    name: str = Field(default="新建文件夹", description="文件夹名称")
+    parent_id: str = Field(default="0", description="父文件夹ID")
+
+class RenameFileRequest(BaseModel):
+    """重命名文件请求模型"""
+    file_id: str = Field(..., description="文件/文件夹ID")
+    new_name: str = Field(..., description="新名称")
+
+class DeleteFilesRequest(BaseModel):
+    """删除文件请求模型"""
+    file_ids: List[str] = Field(..., description="文件ID列表")
+
 # 全局的 QuarkHelper 实例缓存
 quark_helpers: Dict[str, QuarkHelper] = {}
 
@@ -174,8 +189,7 @@ async def get_download_info(
 
 @router.post("/directory")
 async def create_directory(
-    name: str = Body(..., description="文件夹名称"),
-    parent_id: str = Body(default="0", description="父文件夹ID"),
+    request: CreateDirectoryRequest,
     user: User = Depends(get_current_user)
 ):
     """
@@ -201,7 +215,7 @@ async def create_directory(
         if error:
             return error
             
-        dir_id = await helper.create_dir(name, parent_id)
+        dir_id = await helper.create_dir(request.name, request.parent_id)
         if not dir_id:
             return Response(code=400, message="创建文件夹失败")
         return Response(
@@ -213,13 +227,12 @@ async def create_directory(
         logger.error(f"创建文件夹失败: {str(e)}")
         return Response(code=-1, message=f"创建文件夹失败: {str(e)}")
 
-@router.put("/rename")
+@router.post("/rename")
 async def rename_file(
-    file_id: str = Body(..., description="文件/文件夹ID"),
-    new_name: str = Body(..., description="新名称"),
+    request: RenameFileRequest,
     user: User = Depends(get_current_user)
 ):
-    """
+    """ 
     重命名文件或文件夹
     
     参数:
@@ -231,7 +244,7 @@ async def rename_file(
         if error:
             return error
             
-        success = await helper.rename(file_id, new_name)
+        success = await helper.rename(request.file_id, request.new_name)
         if not success:
             return Response(code=400, message="重命名失败")
         return Response(code=200, message="操作成功")
@@ -241,7 +254,7 @@ async def rename_file(
 
 @router.delete("/files")
 async def delete_files(
-    file_ids: Union[str, List[str]] = Body(..., description="文件ID或ID列表"),
+    delete_request: DeleteFilesRequest,
     user: User = Depends(get_current_user)
 ):
     """
@@ -255,7 +268,7 @@ async def delete_files(
         if error:
             return error
             
-        success = await helper.delete(file_ids)
+        success = await helper.delete(delete_request.file_ids)
         if not success:
             return Response(code=400, message="删除失败")
         return Response(code=200, message="操作成功")

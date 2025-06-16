@@ -24,6 +24,7 @@ dependencies = [
     "bs4>=0.0.2",
     "aiohttp>=3.12.11",
     "pycryptodome>=3.23.0",
+    "croniter>=2.0.3",
 ]
 
 [build-system]

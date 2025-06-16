@@ -7,10 +7,16 @@ import { Button, message, Modal } from 'ant-design-vue';
 
 import FolderSelect from '../FolderSelect/index.vue';
 import {
+  createCloud189FolderApi,
+  deleteCloud189FileApi,
+  deleteQuarkFileApi,
   getCloud189FileListApi,
   getCloud189ShareFileListApi,
   getQuarkFileListApi,
   getQuarkShareFileListApi,
+  postQuarkCreateDirectoryApi,
+  renameCloud189FileApi,
+  renameQuarkFileApi,
   saveCloud189FileApi,
   saveQuarkFileApi,
 } from './api';
@@ -217,11 +223,18 @@ const saveShareFile = async () => {
   } else if (props.item?.cloudType === 'tianyiyun') {
     const target_folder_id =
       paths2.value[paths2.value.length - 1]?.fid ?? '-11';
-    const file_ids = selectedFile.value.map((item) => ({
-      fileId: item.fid,
-      fileName: item.file_name,
-      isFolder: item.dir,
-    }));
+    const file_ids =
+      selectedFile.value.length > 0
+        ? selectedFile.value.map((item) => ({
+            fileId: item.fid,
+            fileName: item.file_name,
+            isFolder: item.dir,
+          }))
+        : fileList.value.map((item) => ({
+            fileId: item.fid,
+            fileName: item.file_name,
+            isFolder: item.dir,
+          }));
     return await saveCloud189FileApi({
       share_url: shareUrl.value,
       target_folder_id,
@@ -269,6 +282,113 @@ const onOk = async () => {
 const onBack = () => {
   currentStep.value = 0;
 };
+
+const createDir = async (fileName: any) => {
+  if (!fileName) {
+    message.error('请输入文件夹名称');
+    return;
+  }
+  if (props.item?.cloudType === 'quark') {
+    loading.value = true;
+    await postQuarkCreateDirectoryApi({
+      name: fileName,
+      parent_id: paths2.value[paths2.value.length - 1]?.fid ?? '0',
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        setTimeout(() => {
+          // 刷新
+          getFileList({
+            fid: paths2.value[paths2.value.length - 1]?.fid ?? '0',
+          });
+        }, 500);
+      });
+  } else if (props.item?.cloudType === 'tianyiyun') {
+    loading.value = true;
+    await createCloud189FolderApi({
+      folder_name: fileName,
+      parent_id: paths2.value[paths2.value.length - 1]?.fid ?? '-11',
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths2.value[paths2.value.length - 1]?.fid ?? '-11',
+        });
+      });
+  }
+};
+
+const rename = async (_file: any) => {
+  if (props.item?.cloudType === 'quark') {
+    loading.value = true;
+    await renameQuarkFileApi({
+      file_id: _file.fid,
+      new_name: _file.file_name,
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths2.value[paths2.value.length - 1]?.fid ?? '0',
+        });
+      });
+  } else if (props.item?.cloudType === 'tianyiyun') {
+    loading.value = true;
+    await renameCloud189FileApi({
+      file_id: _file.fid,
+      new_name: _file.file_name,
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths2.value[paths2.value.length - 1]?.fid ?? '-11',
+        });
+      });
+  }
+};
+
+const deleteFile = async (_file: any) => {
+  if (props.item?.cloudType === 'quark') {
+    loading.value = true;
+    await deleteQuarkFileApi({
+      file_ids: [_file.fid],
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths2.value[paths2.value.length - 1]?.fid ?? '0',
+        });
+      });
+  } else if (props.item?.cloudType === 'tianyiyun') {
+    loading.value = true;
+    await deleteCloud189FileApi({
+      file_ids: [
+        {
+          fileId: _file.fid,
+          fileName: _file.file_name,
+          isFolder: _file.dir ? 1 : 0,
+        },
+      ],
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths2.value[paths2.value.length - 1]?.fid ?? '-11',
+        });
+      });
+  }
+};
 </script>
 
 <template>
@@ -291,7 +411,11 @@ const onBack = () => {
         :if-use-checkbox="false"
         :file-list="fileList2"
         :paths="paths2"
+        :if-use-file-manager="true"
         @navigate-to="navigateTo"
+        @create-dir="createDir"
+        @rename="rename"
+        @delete="deleteFile"
       />
     </div>
     <template #footer>

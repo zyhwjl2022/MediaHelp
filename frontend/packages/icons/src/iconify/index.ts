@@ -19,3 +19,11 @@ export const MdiHome = createIconifyIcon('mdi:home');
 export const MdiFile = createIconifyIcon('mdi:file');
 
 export const MdiBack = createIconifyIcon('stash:arrow-reply-solid');
+
+export const MdiRename = createIconifyIcon('mdi:rename');
+
+export const MdiSave = createIconifyIcon('material-symbols:save');
+
+export const MdiDelete = createIconifyIcon('mdi:delete');
+
+export const MdiCreateDir = createIconifyIcon('material-symbols:folder');

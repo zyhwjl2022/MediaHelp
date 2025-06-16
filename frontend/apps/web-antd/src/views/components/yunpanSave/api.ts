@@ -29,6 +29,27 @@ export const getQuarkFidsApi = (data: any) => {
 };
 
 /**
+ * quark 重命名文件
+ */
+export const renameQuarkFileApi = (data: any) => {
+  return requestClient.post('/quark/rename', data);
+};
+
+/**
+ * 获取目录列表
+ */
+export const postQuarkCreateDirectoryApi = (data: any) => {
+  return requestClient.post('/quark/directory', data);
+};
+
+/**
+ * 删除文件
+ */
+export const deleteQuarkFileApi = (data: any) => {
+  return requestClient.delete('/quark/files', { data });
+};
+
+/**
  * 189 获取文件列表
  */
 export const getCloud189FileListApi = (data: any) => {
@@ -47,4 +68,25 @@ export const getCloud189ShareFileListApi = (data: any) => {
  */
 export const saveCloud189FileApi = (data: any) => {
   return requestClient.post('/cloud189/share/save', data);
+};
+
+/**
+ * 189 重命名文件
+ */
+export const createCloud189FolderApi = (data: any) => {
+  return requestClient.post('/cloud189/folder', data);
+};
+
+/**
+ * 189 重命名文件
+ */
+export const renameCloud189FileApi = (data: any) => {
+  return requestClient.post('/cloud189/rename', data);
+};
+
+/**
+ * 189 删除文件
+ */
+export const deleteCloud189FileApi = (data: any) => {
+  return requestClient.post('/cloud189/delete', data);
 };
