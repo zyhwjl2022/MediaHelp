@@ -2,6 +2,7 @@ import re
 import json
 import time
 import random
+import asyncio
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Union
 from loguru import logger
@@ -128,25 +129,56 @@ class QuarkSDK:
         )
         return response.get("data", False)
 
-    async def get_file_list(self, dir_id: str = "0", page: int = 1, size: int = 50) -> Dict[str, Any]:
+    async def get_file_list(self, dir_id: str = "0", **kwargs) -> Dict[str, Any]:
         """
         获取文件列表
         :param dir_id: 文件夹 ID，默认为根目录
-        :param page: 页码
-        :param size: 每页数量
+        :param kwargs: 其他参数
+            - fetch_full_path: 是否获取完整路径，默认为0
+            - recursive: 是否获取所有分页数据，默认为True
+        :return: 文件列表信息
         """
-        url = f"{self.BASE_URL}/1/clouddrive/file/sort"
-        params = {
-            "pr": "ucpro",
-            "fr": "pc",
-            "pdir_fid": dir_id,
-            "_page": page,
-            "_size": size,
-            "_fetch_total": "1",
-            "_fetch_sub_dirs": "0",
-            "_sort": "file_type:asc,updated_at:desc"
-        }
-        return await self._send_request("GET", url, params=params)
+        list_merge = []
+        page = 1
+        recursive = kwargs.pop("recursive", True)  # 默认获取所有分页数据
+        
+        while True:
+            url = f"{self.BASE_URL}/1/clouddrive/file/sort"
+            params = {
+                "pr": "ucpro",
+                "fr": "pc",
+                "uc_param_str": "",
+                "pdir_fid": dir_id,
+                "_page": page,
+                "_size": "50",
+                "_fetch_total": "1",
+                "_fetch_sub_dirs": "0",
+                "_sort": "file_type:asc,updated_at:desc",
+                "_fetch_full_path": kwargs.get("fetch_full_path", 0)
+            }
+            
+            response = await self._send_request("GET", url, params=params)
+            if response.get("code") != 0:
+                return response
+                
+            if response.get("data", {}).get("list"):
+                list_merge.extend(response["data"]["list"])
+                if not recursive:  # 如果不获取所有分页，只获取第一页
+                    break
+                page += 1
+            else:
+                break
+                
+            # 检查是否已获取所有文件
+            total = response.get("metadata", {}).get("_total", 0)
+            if len(list_merge) >= total:
+                break
+        
+        # 更新最终响应中的文件列表
+        if response.get("data"):
+            response["data"]["list"] = list_merge
+            
+        return response
 
     async def search_files(self, keyword: str, dir_id: str = "0") -> Dict[str, Any]:
         """
@@ -225,32 +257,57 @@ class QuarkSDK:
         data = {"pwd_id": share_id, "passcode": password}
         return await self._send_request("POST", url, params=params, json=data)
 
-    async def get_share_file_list(self, share_id: str, token: str, dir_id: str = "0") -> Dict[str, Any]:
+    async def get_share_file_list(self, share_id: str, token: str, dir_id: str = "0", fetch_share: int = 0) -> Dict[str, Any]:
         """
         获取分享文件列表
         :param share_id: 分享 ID
         :param token: 分享 token
         :param dir_id: 文件夹 ID
+        :param fetch_share: 是否获取分享信息，默认为0
+        :return: 分享文件列表信息
         """
-        url = f"{self.BASE_URL}/1/clouddrive/share/sharepage/detail"
-        params = {
-            "pr": "ucpro",
-            "fr": "pc",
-            "uc_param_str": "",
-            "pwd_id": share_id,
-            "stoken": token,
-            "pdir_fid": dir_id,
-            "force": 0,
-            "_page": 1,
-            "_size": 50,
-            "_fetch_banner": 1,
-            "_fetch_share": 1,
-            "_fetch_total": 1,
-            "_sort": "file_type:asc,updated_at:desc",
-            "__dt": int(random.uniform(1, 5) * 60 * 1000),
-            "__t": int(datetime.now().timestamp()),
-        }
-        return await self._send_request("GET", url, params=params)
+        list_merge = []
+        page = 1
+        
+        while True:
+            url = f"{self.BASE_URL}/1/clouddrive/share/sharepage/detail"
+            params = {
+                "pr": "ucpro",
+                "fr": "pc",
+                "pwd_id": share_id,
+                "stoken": token,
+                "pdir_fid": dir_id,
+                "force": "0",
+                "_page": page,
+                "_size": "50",
+                "_fetch_banner": "0",
+                "_fetch_share": fetch_share,
+                "_fetch_total": "1",
+                "_sort": "file_type:asc,updated_at:desc",
+                "__dt": int(random.uniform(1, 5) * 60 * 1000),
+                "__t": int(datetime.now().timestamp())
+            }
+            
+            response = await self._send_request("GET", url, params=params)
+            if response.get("code") != 0:
+                return response
+                
+            if response.get("data", {}).get("list"):
+                list_merge.extend(response["data"]["list"])
+                page += 1
+            else:
+                break
+                
+            # 检查是否已获取所有文件
+            total = response.get("metadata", {}).get("_total", 0)
+            if len(list_merge) >= total:
+                break
+        
+        # 更新最终响应中的文件列表
+        if response.get("data"):
+            response["data"]["list"] = list_merge
+            
+        return response
 
     async def save_share_files(self, share_id: str, token: str, file_ids: List[str],
                         file_tokens: List[str], target_dir_id: str = "0", pdir_fid: str = "0") -> Dict[str, Any]:
@@ -281,8 +338,6 @@ class QuarkSDK:
             "stoken": token,
             "scene": "link"
         }
-        logger.info(f"保存分享文件参数：{data}")
-        logger.info(f"保存分享文件参数：{params}")
         return await self._send_request("POST", url, params=params, json=data)
 
     async def get_task_status(self, task_id: str) -> Dict[str, Any]:
@@ -290,15 +345,28 @@ class QuarkSDK:
         获取任务状态
         :param task_id: 任务 ID
         """
-        url = f"{self.BASE_URL}/1/clouddrive/task"
-        params = {
-            "pr": "ucpro",
-            "fr": "pc",
-            "task_id": task_id,
-            "__dt": int(random.uniform(1, 5) * 60 * 1000),
-            "__t": datetime.now().timestamp()
-        }
-        return await self._send_request("GET", url, params=params)
+        retry_index = 0
+        while True:
+            url = f"{self.BASE_URL}/1/clouddrive/task"
+            params = {
+                "pr": "ucpro",
+                "fr": "pc",
+                "uc_param_str": "",
+                "task_id": task_id,
+                "retry_index": retry_index,
+                "__dt": int(random.uniform(1, 5) * 60 * 1000),
+                "__t": int(datetime.now().timestamp())
+            }
+            response = await self._send_request("GET", url, params=params)
+            
+            if response.get("data", {}).get("status") != 0:
+                break
+            else:
+                if retry_index == 0:
+                    logger.info(f"正在等待[{response['data']['task_title']}]执行结果", end="", flush=True)
+                retry_index += 1
+                await asyncio.sleep(0.5)
+        return response
 
     async def get_fids(self, file_paths: List[str]) -> List[Dict[str, Any]]:
         """
@@ -311,7 +379,6 @@ class QuarkSDK:
             url = f"{self.BASE_URL}/1/clouddrive/file/info/path_list"
             params = {"pr": "ucpro", "fr": "pc"}
             data = {"file_path": file_paths[:50], "namespace": "0"}
-            logger.info(f"获取文件路径对应的fid参数：{data}")
             response = await self._send_request("POST", url, params=params, json=data)
             if response.get("code") == 0:
                 all_fids.extend(response.get("data", []))
@@ -323,23 +390,6 @@ class QuarkSDK:
                 break
                 
         return all_fids
-
-    def wait_task_complete(self, task_id: str, timeout: int = 60) -> Dict[str, Any]:
-        """
-        等待任务完成
-        :param task_id: 任务 ID
-        :param timeout: 超时时间（秒）
-        """
-        start_time = time.time()
-        while True:
-            if time.time() - start_time > timeout:
-                return {"code": -1, "message": "任务超时"}
-
-            response = self.get_task_status(task_id)
-            if response["data"]["status"] != 0:
-                return response
-            
-            time.sleep(0.5)
 
     def extract_share_info(self, share_url: str) -> Dict[str, Any]:
         """

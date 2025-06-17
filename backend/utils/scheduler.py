@@ -2,12 +2,9 @@ import asyncio
 from datetime import datetime
 from typing import Dict, Any, Callable
 from loguru import logger
-
-from api.quark import get_share_info
+import re
+from task import cloud189_auto_save, quark_auto_save
 from utils.scheduled_manager import scheduled_manager
-from utils.config_manager import config_manager
-from utils.quark_helper import QuarkHelper
-from utils.cloud189.client import Cloud189Client
 
 class TaskScheduler:
     _instance = None
@@ -26,172 +23,9 @@ class TaskScheduler:
 
     def register_system_tasks(self):
         """注册系统默认的任务处理器"""
-            
-        # 夸克网盘自动保存任务
-        async def quark_auto_save(task: Dict[str, Any]):
-            """夸克网盘自动保存任务
-            参数:
-            1. shareUrl: 分享链接
-            2. targetDir: 目标文件夹ID，默认为根目录
-            3. sourcePath: 源路径，默认为根目录
-            """
-            params = task.get("params", {})
-            task_name = task.get("name", "")
-            share_url = params.get("shareUrl")
-            target_dir = params.get("targetDir", "/媒体库")
 
-            isShareUrlValid = params.get("isShareUrlValid", True)
-            
-            if not isShareUrlValid:
-                logger.error(f"任务 [{task_name}] 分享链接无效: {share_url} 跳过执行")
-                return
-
-            if not share_url:
-                logger.error(f"任务 [{task_name}] 缺少必要参数: shareUrl")
-                return
-
-            if not target_dir:
-                logger.error(f"任务 [{task_name}] 缺少必要参数: targetDir")
-                return
-            try:
-                # 从系统配置中获取 cookie
-                sys_config = config_manager.get_config()
-                cookie = sys_config.get("quarkCookie", "")
-                if not cookie:
-                    logger.error(f"任务 [{task_name}] 未配置夸克网盘 cookie")
-                    return
-                    
-                helper = QuarkHelper(cookie)
-                if not await helper.init():
-                    logger.error(f"任务 [{task_name}] 夸克网盘初始化失败，请检查 cookie 是否有效")
-                    return
-
-            except Exception as e:
-                logger.error(f"任务 [{task_name}] 夸克网盘helper获取失败: {str(e)}")
-                return
-              
-            # 获取分享信息 看看分享链接是否有效
-            # 解析分享链接
-            share_info = helper.sdk.extract_share_info(share_url)
-            if not share_info["share_id"]:
-               logger.error(f"分享链接无效: {share_url}")
-               # 创建新的任务对象进行更新
-               updated_task = task.copy()
-               updated_task["params"] = task.get("params", {}).copy()
-               updated_task["params"]["isShareUrlValid"] = False
-               scheduled_manager.update_task(task_name, updated_task)
-               return
-            # 获取分享信息
-            logger.info(f"获取分享信息: {share_info}")
-            share_response = await helper.sdk.get_share_info(
-                share_info["share_id"], 
-                share_info["password"]
-            )
-            if share_response.get("code") != 0:
-                logger.error(f"分享链接无效: {share_url}")
-                # 创建新的任务对象进行更新
-                updated_task = task.copy()
-                updated_task["params"] = task.get("params", {}).copy()
-                updated_task["params"]["isShareUrlValid"] = False
-                scheduled_manager.update_task(task_name, updated_task)
-                return
-            
-            # 2.获取分享文件列表
-            # 获取分享文件列表
-            token = share_response.get("data", {}).get("stoken")
-            if not token:
-                logger.error(f"获取分享token失败: {share_response}")
-                return
-            file_list = await helper.sdk.get_share_file_list(
-                share_info["share_id"],
-                token,
-                share_info["dir_id"]
-            )
-            
-            if file_list.get("code") != 0:
-                logger.error(f"获取分享文件列表失败: {file_list.get('message')}")
-                return
-                
-            files = file_list.get("data", {}).get("list", [])
-            if not files:
-                logger.warning("分享文件列表为空")
-                return
-            
-            # 获取目标文件夹的fid
-            if(target_dir == "/"):
-                target_dir_fid = '0'
-            else:
-                res = await helper.sdk.get_fids([target_dir])
-                if res.get("code") != 0:
-                    logger.error(f"获取目标文件夹fid失败: {res.get('message')}")
-                    return
-                logger.info(f"获取目标文件夹fid成功: {res}")
-                # target_dir_fid = res.get("data", {})[0].get("fid", "")
-              
-            # logger.info(f"获取目标文件夹fid成功: {target_dir_fid}")
-            
-            # 根据目标文件夹的fid，获取文件列表
-            # file_list = await helper.sdk.get_file_list(
-            #     target_dir_fid,
-            # )
-            
-            # logger.info(f"获取目标文件夹文件列表成功: {file_list} 来源文件列表: {files}")
-            
-            #保存文件
-            # file_ids = [f["fid"] for f in files]
-            # file_tokens = [f.get("share_fid_token", "") for f in files]
-            
-            # save_response = await helper.sdk.save_share_files(
-            #     share_info["share_id"],
-            #     share_response["data"]["token"],
-            #     file_ids,
-            #     file_tokens,
-            #     target_dir,
-            #     source_path_fid
-            # )
-            
-            # if save_response.get("code") != 0:
-            #     logger.error(f"保存分享文件失败: {save_response.get('message')}")
-            #     return
-                
-            # logger.info(f"任务 [{task_name}] 保存分享文件成功")
-
-        # 天翼云盘自动保存任务
-        async def cloud189_auto_save(params: Dict[str, Any]):
-            """天翼云盘自动保存任务
-            参数:
-            1. shareUrl: 分享链接
-            2. targetDir: 目标文件夹ID，默认为-11
-            3. others: 其他参数
-            """
-            share_url = params.get("shareUrl")
-            target_dir = params.get("targetDir", "-11")
-            others = params.get("others", {})
-
-            if not share_url:
-                logger.error("缺少必要参数: shareUrl")
-                return
-              
-            if not target_dir:
-                logger.error("缺少必要参数: targetDir")
-                return
-
-            try:
-                # 创建客户端实例，它会自动从配置文件加载session
-                client = Cloud189Client()
-                if not await client.login():
-                    logger.error("天翼云盘登录失败")
-                    return
-
-                # TODO: 后续的转存逻辑
-                logger.info("成功获取天翼云盘客户端")
-
-            except Exception as e:
-                logger.error(f"天翼云盘自动保存任务失败: {str(e)}")
-                return
-
-        self.register_task_handler("quark_auto_save", quark_auto_save)
-        self.register_task_handler("cloud189_auto_save", cloud189_auto_save)
+        self.register_task_handler("quark_auto_save", quark_auto_save.QuarkAutoSave().quark_auto_save)
+        self.register_task_handler("cloud189_auto_save", cloud189_auto_save.Cloud189AutoSave().cloud189_auto_save)
 
         logger.info("系统任务注册完成")
 
@@ -241,8 +75,10 @@ class TaskScheduler:
                     # 检查是否需要执行
                     last_run = self._last_run_times.get(task_name)
                     if not last_run or (next_run <= current_time and last_run < next_run):
-                        # 创建新的任务协程
-                        asyncio.create_task(self._execute_task(task))
+                        # 创建新的任务协程 异步执行
+                        # asyncio.create_task(self._execute_task(task))
+                        # 同步等待任务执行完成
+                        await self._execute_task(task)
 
                 # 清理已删除任务的执行记录
                 task_names = {task.get("name") for task in enabled_tasks}

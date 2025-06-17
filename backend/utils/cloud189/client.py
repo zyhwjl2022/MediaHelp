@@ -282,7 +282,6 @@ class Cloud189Client:
             f"{WEB_URL}/api/open/share/getShareInfoByCodeV2.action",
             params={"shareCode": share_code}
         )
-        logger.info(f"获取分享信息: {result}")
         return result
 
     async def list_share_files(

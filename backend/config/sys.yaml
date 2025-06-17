@@ -18,8 +18,8 @@ tg_resource:
   telegram:
     baseUrl: https://t.me/s
     channels:
-    - id: yydf_hzl
-      name: 网盘资源综合频道
+    - id: ''
+      name: ''
     - id: yunpanqk
       name: 网盘资源收藏(夸克)
     - id: tyypzhpd

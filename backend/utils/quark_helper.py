@@ -24,37 +24,21 @@ class QuarkHelper:
         logger.info(f"夸克网盘账号 [{self.sdk.nickname}] 初始化成功")
         return True
 
-    async def list_files(self, dir_id: str = "0", recursive: bool = False) -> List[Dict[str, Any]]:
+    async def list_files(self, dir_id: str = "0", recursive: bool = True, **kwargs) -> List[Dict[str, Any]]:
         """
         获取文件列表
         :param dir_id: 文件夹ID，默认为根目录
-        :param recursive: 是否递归获取子文件夹内容
+        :param recursive: 是否获取所有分页数据，默认为True
+        :param kwargs: 其他参数
+            - fetch_full_path: 是否获取完整路径，默认为0
         :return: 文件列表
         """
-        all_files = []
-        page = 1
-        while True:
-            response = await self.sdk.get_file_list(dir_id=dir_id, page=page)
-            if response.get("code") != 0:
-                logger.error(f"获取文件列表失败：{response.get('message')}")
-                break
-                
-            files = response.get("data", {}).get("list", [])
-            if not files:
-                break
-                
-            all_files.extend(files)
+        response = await self.sdk.get_file_list(dir_id, recursive=recursive, **kwargs)
+        if response.get("code") != 0:
+            logger.error(f"获取文件列表失败：{response.get('message')}")
+            return []
             
-            # 如果需要递归获取子文件夹
-            if recursive:
-                for file in files:
-                    if file.get("file_type") == 1:  # 是文件夹
-                        sub_files = await self.list_files(file.get("fid"), recursive=True)
-                        all_files.extend(sub_files)
-            
-            page += 1
-            
-        return all_files
+        return response.get("data", {}).get("list", [])
 
     async def search(self, keyword: str, dir_id: str = "0") -> List[Dict[str, Any]]:
         """

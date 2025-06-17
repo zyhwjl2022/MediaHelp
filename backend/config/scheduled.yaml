@@ -1,8 +1,44 @@
+# 定时任务配置文件
+# 格式说明：
+# - name: 任务名称
+# - cron: cron表达式 (分 时 日 月 星期)
+# - enabled: 是否启用
+# - task: 任务类型
+# - params: 任务参数
+
+magic_regex:
+  "$TV":
+    pattern: ".*?([Ss]\\d{1,2})?(?:[第EePpXx\\.\\-\\_\\( ]{1,2}|^)(\\d{1,3})(?!\\d).*?\\.(mp4|mkv)"
+    replace: "\\1E\\2.\\3"
+  "$BLACK_WORD":
+    pattern: "^(?!.*纯享)(?!.*加更)(?!.*超前企划)(?!.*训练室)(?!.*蒸蒸日上).*"
+    replace: ""
+  "$SHOW_PRO":
+    pattern: "^(?!.*纯享)(?!.*加更)(?!.*抢先)(?!.*预告).*?第\\d+期.*"
+    replace: "{II}.{TASKNAME}.{DATE}.第{E}期{PART}.{EXT}"
+  "$TV_PRO":
+    pattern: ""
+    replace: "{TASKNAME}.{SXX}E{E}.{EXT}"
+
 tasks:
-- name: 夸克网盘自动保存示例
+# - name: 夸克网盘自动保存示例
+#   cron: '*/5 * * * *'
+#   enabled: true
+#   task: quark_auto_save
+#   params:
+#     shareUrl: https://pan.quark.cn/s/08bc12d1b97b
+#     targetDir: '/媒体库'
+#     startMagic:
+#       - value: 1
+#         type: "{SXX}"
+#         symbol: "="
+#       - value: 200
+#         type: "{E}"
+#         symbol: "="
+- name: 天翼云盘自动保存示例
   cron: '*/5 * * * *'
   enabled: true
-  task: quark_auto_save
+  task: cloud189_auto_save
   params:
-    shareUrl: https://pan.quark.cn/s/2b9f3b7d40b7#/list/share/4ba1f56b4b194198b9663d35e8cf66d8-凡人Xiu仙传/11f10d34bc444ccd80f49d0b2a748fa7-凡人修仙传 年番（2025）【更新中】
-    targetDir: /媒体库/动漫/凡人修仙传 (2020)/A.Record.of.a.Mortal&#39;s.Journey.to.Immortality.S01.2160p.WEB-DL.AAC.H.265-HiveWeb
+    shareUrl: https://cloud.189.cn/t/nUfMN32UFRNb
+
