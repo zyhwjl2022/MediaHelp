@@ -229,8 +229,6 @@ class TGResourceSDK:
         except Exception as e:
             logger.error("搜索失败", exc_info=e)
             return {"data": []}
-        finally:
-            await http_client.close()
 
     async def update_config(self, channels: List[Dict[str, str]] = None, patterns: Dict[str, str] = None):
         """更新SDK配置"""

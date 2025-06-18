@@ -168,7 +168,7 @@ const getFileList = async (dir: any = {}) => {
     fileList2.value = res.list ?? [];
     selfSavePaths(dir, filepaths2);
     paths2.value = [...filepaths2];
-  } else {
+  } else if (props.item?.cloudType === 'tianyiyun') {
     loading.value = true;
     const res = await getCloud189FileListApi({
       folder_id: dir.fid === undefined ? '-11' : String(dir.fid),

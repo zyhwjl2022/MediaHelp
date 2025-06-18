@@ -153,7 +153,9 @@ const onSave = (file: any) => {
         </BreadcrumbItem>
       </Breadcrumb>
     </div>
-    <div class="mt-4 border-b border-t">
+    <div
+      class="mt-4 max-h-[60vh] overflow-y-auto overflow-x-hidden border-b border-t"
+    >
       <div class="ml-5 mt-3 flex w-full items-center justify-between">
         <Checkbox v-model:checked="selectAll" v-if="ifUseCheckbox">
           全选

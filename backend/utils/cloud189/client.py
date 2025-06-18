@@ -690,31 +690,37 @@ class Cloud189Client:
 
     async def save_share_files(
         self,
-        share_url: str,
+        share_url: Optional[str] = None,
+        shareInfo: Optional[Dict[str, Any]] = None,
         target_folder_id: str = ROOT_FOLDER_ID,
-        file_ids: Optional[List[BatchTaskInfo]] = None
+        file_ids: Optional[List[BatchTaskInfo]] = None,
     ) -> SaveShareResult:
         """
         保存分享文件
-        :param share_url: 分享链接
+        :param share_url: 分享链接（可选）
+        :param shareInfo: 分享信息（可选，与share_url二选一）
         :param target_folder_id: 目标文件夹ID
         :param file_ids: 要保存的文件信息列表
         :return: 保存结果
         """
         try:
-            # 解析分享链接
-            logger.info(f"解析分享链接: {share_url}")
-            url, _ = self.parse_cloud_share(share_url)
-            if not url:
-                raise Cloud189Error("无效的分享链接")
-                
-            # 获取分享码
-            share_code = self.parse_share_code(url)
-            
             # 获取分享信息
-            share_info = await self.get_share_info(share_code)
+            share_info = None
+            if share_url:
+                # 解析分享链接
+                logger.info(f"解析分享链接: {share_url}")
+                url, _ = self.parse_cloud_share(share_url)
+                if not url:
+                    raise Cloud189Error("无效的分享链接")
+
+                # 获取分享码
+                share_code = self.parse_share_code(url)
+                share_info = await self.get_share_info(share_code)
+            elif shareInfo:
+                share_info = shareInfo
+            else:
+                raise Cloud189Error("share_url和shareInfo参数不能同时为空")
             
-            logger.info(f"分享信息: {file_ids}")
             # 创建批量保存任务
             task_infos = []
             for file in (file_ids or []):

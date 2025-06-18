@@ -114,7 +114,14 @@ async def disable_task(
     
     return Response(data=task)
 
-@router.get("/task-types", response_model=Response[List[str]])
+@router.get("/task-types", response_model=Response)
 async def get_task_types(current_user: User = Depends(get_current_user)):
     """获取所有可用的任务类型"""
-    return Response(data=list(task_scheduler._task_handlers.keys())) 
+    # 根据key 对应中文
+    task_types = list(task_scheduler._task_handlers.keys())
+    task_types_dict = {
+        "cloud189_auto_save": "天翼云盘自动保存",
+        "quark_auto_save": "夸克网盘自动保存"
+    }
+    response = [{'label': task_types_dict[task_type],'value':task_type} for task_type in task_types]
+    return Response(data=response)

@@ -124,7 +124,9 @@ class QuarkAutoSave:
                         dir_name_list,
                         self.params.get("ignore_extension"),
                     ):
-                        share_file["file_name_re"] = file_name_re
+                                     # 视频文件才进行重命名
+                        if re.search(r'\.(mp4|mkv|avi|rmvb|flv|wmv|mov|m4v)$', share_file["file_name"].lower()):
+                            share_file["file_name_re"] = file_name_re
                         need_save_files.append(share_file)
               else:
                 # 文件夹
@@ -156,14 +158,22 @@ class QuarkAutoSave:
             task_status = await self.helper.sdk.get_task_status(task_id)
                 
             if task_status.get("code") == 0:
-              saved_fid = task_status.get("data", {}).get("save_as", {}).get("save_as_top_fids", [])
-              for i, file in enumerate(need_save_files):
+              # #重新获取文件列表
+              re_target_files = await self.helper.sdk.get_file_list(to_pdir_fid)
+              if re_target_files.get("code") != 0:
+                logger.error(f"获取目标文件夹文件列表失败: {re_target_files.get('message')}")
+                return
+
+              re_target_file_list = re_target_files.get("data", {}).get("list", [])
+              for file in need_save_files:
+                saved_fid = next((f for f in re_target_file_list if f["file_name"]==file["file_name"]), None)
+                logger.info(f"saved_fid: {saved_fid}")
                 try:
                   # 如果需要重命名
                   if file.get("file_name_re") and file["file_name_re"] != file["file_name"]:
                     # 执行重命名
                     rename_result = await self.helper.sdk.rename_file(
-                      saved_fid[i],
+                      saved_fid['fid'],
                       file["file_name_re"]
                     )
                     # 为了防止封控 间隔0.5秒

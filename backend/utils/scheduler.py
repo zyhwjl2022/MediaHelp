@@ -69,6 +69,7 @@ class TaskScheduler:
 
                     # 获取任务的下次执行时间
                     next_run = scheduled_manager.get_next_run_time(task)
+                    logger.info(f"next_run: {next_run}")
                     if not next_run:
                         continue
 

@@ -50,8 +50,11 @@ class HttpClient:
                 trust_env=True,  # 允许从环境变量读取代理设置
                 connector=aiohttp.TCPConnector(
                     ssl=False,  # 禁用SSL验证
-                    force_close=True,  # 强制关闭连接
-                    enable_cleanup_closed=True  # 清理已关闭的连接
+                    force_close=False,  # 不强制关闭连接
+                    enable_cleanup_closed=True,  # 清理已关闭的连接
+                    limit=100,  # 最大并发连接数
+                    limit_per_host=20,  # 每个主机的最大并发连接数
+                    keepalive_timeout=60  # 保持连接活跃的超时时间
                 )
             )
 
