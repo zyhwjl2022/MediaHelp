@@ -1,5 +1,8 @@
 import http
 import sys
+import glob
+import os
+from pathlib import Path
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from fastapi import FastAPI, Request, HTTPException
@@ -11,6 +14,7 @@ from crud.config import settings
 from api.main import api_router
 from utils.exceptions import APIException, api_exception_handler, validation_exception_handler, http_exception_handler, create_error_response
 from utils.scheduler import task_scheduler
+from utils.logger_service import logger_service
 import asyncio
 from contextlib import asynccontextmanager
 
@@ -58,6 +62,25 @@ def setup_logging():
         _logger.propagate = False
         _logger.addHandler(InterceptHandler())
 
+async def cleanup_log_files():
+    """清理所有日志文件"""
+    try:
+        log_dir = Path("logs")
+        if not log_dir.exists():
+            return
+        
+        # 删除所有日志文件
+        for log_file in log_dir.glob("*.log"):
+            try:
+                log_file.unlink()
+                logger.info(f"已删除日志文件: {log_file}")
+            except Exception as e:
+                logger.error(f"删除日志文件失败 {log_file}: {e}")
+        
+        logger.info("日志文件清理完成")
+    except Exception as e:
+        logger.error(f"清理日志文件时发生错误: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -65,9 +88,16 @@ async def lifespan(app: FastAPI):
     """
     # 启动前的操作
     try:
+        # 清理日志文件
+        await cleanup_log_files()
+        
         # 启动定时任务调度器
         scheduler_task = asyncio.create_task(task_scheduler.start())
         logger.info("应用程序启动，定时任务调度器已启动")
+        
+        # 记录启动日志
+        await logger_service.info("应用程序启动")
+        
         yield
     finally:
         # 关闭时的操作
@@ -76,6 +106,9 @@ async def lifespan(app: FastAPI):
             await asyncio.wait_for(scheduler_task, timeout=5.0)
         except asyncio.TimeoutError:
             logger.warning("定时任务调度器关闭超时")
+        
+        # 记录关闭日志
+        await logger_service.info("应用程序关闭")
         logger.info("应用程序关闭，定时任务调度器已停止")
 
 def init_app():

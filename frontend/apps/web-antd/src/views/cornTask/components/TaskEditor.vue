@@ -38,9 +38,9 @@ const open = defineModel<boolean>('open', {
 const formRef = ref<any>(null);
 const setCloudType = (type: string) => {
   if (type === 'quark_auto_save') {
-    currentTask.value.task = 'quark_auto_save';
+    cloudType.value = 'quark';
   } else if (type === 'cloud189_auto_save') {
-    currentTask.value.task = 'cloud189_auto_save';
+    cloudType.value = 'tianyiyun';
   }
 };
 
@@ -229,7 +229,7 @@ const onOk = () => {
       params: {
         shareUrl: res.shareUrl,
         targetDir: res.targetDir,
-        sourceDir: res.sourceDir,
+        sourceDir: currentTask.value.sourceDir,
         startMagic: res.startMagic,
       },
     };

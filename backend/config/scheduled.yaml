@@ -17,7 +17,8 @@ tasks:
   cron: '* 19-23 * * *'
   params:
     shareUrl: https://cloud.189.cn/t/UBvyUziiA3qa
-    targetDir: '925141197387954322'
+    targetDir: '623171198639657372'
+    sourceDir: '123341197928769983'
     startMagic: []
   enabled: true
-  next_run: '2025-06-19T17:41:00'
+  next_run: '2025-06-18T19:00:00'

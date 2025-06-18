@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 
-import { Modal } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 
 import FolderSelect from '#/views/components/FolderSelect/index.vue';
 import {
+  createCloud189FolderApi,
+  deleteCloud189FileApi,
+  deleteQuarkFileApi,
   getCloud189FileListApi,
   getCloud189ShareFileListApi,
   getQuarkFileListApi,
   getQuarkShareFileListApi,
+  postQuarkCreateDirectoryApi,
+  renameCloud189FileApi,
+  renameQuarkFileApi,
 } from '#/views/components/yunpanSave/api';
 
 const props = defineProps({
@@ -220,6 +226,112 @@ const getFileList = async (dir: any = {}) => {
     paths.value = [...filePaths];
   }
 };
+const createDir = async (fileName: any) => {
+  if (!fileName) {
+    message.error('请输入文件夹名称');
+    return;
+  }
+  if (props.cloudType === 'quark') {
+    loading.value = true;
+    await postQuarkCreateDirectoryApi({
+      name: fileName,
+      parent_id: paths.value[paths.value.length - 1]?.fid ?? '0',
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        setTimeout(() => {
+          // 刷新
+          getFileList({
+            fid: paths.value[paths.value.length - 1]?.fid ?? '0',
+          });
+        }, 500);
+      });
+  } else if (props.cloudType === 'tianyiyun') {
+    loading.value = true;
+    await createCloud189FolderApi({
+      folder_name: fileName,
+      parent_id: paths.value[paths.value.length - 1]?.fid ?? '-11',
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths.value[paths.value.length - 1]?.fid ?? '-11',
+        });
+      });
+  }
+};
+
+const rename = async (_file: any) => {
+  if (props.cloudType === 'quark') {
+    loading.value = true;
+    await renameQuarkFileApi({
+      file_id: _file.fid,
+      new_name: _file.file_name,
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths.value[paths.value.length - 1]?.fid ?? '0',
+        });
+      });
+  } else if (props.cloudType === 'tianyiyun') {
+    loading.value = true;
+    await renameCloud189FileApi({
+      file_id: _file.fid,
+      new_name: _file.file_name,
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths.value[paths.value.length - 1]?.fid ?? '-11',
+        });
+      });
+  }
+};
+
+const deleteFile = async (_file: any) => {
+  if (props.cloudType === 'quark') {
+    loading.value = true;
+    await deleteQuarkFileApi({
+      file_ids: [_file.fid],
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths.value[paths.value.length - 1]?.fid ?? '0',
+        });
+      });
+  } else if (props.cloudType === 'tianyiyun') {
+    loading.value = true;
+    await deleteCloud189FileApi({
+      file_ids: [
+        {
+          fileId: _file.fid,
+          fileName: _file.file_name,
+          isFolder: _file.dir ? 1 : 0,
+        },
+      ],
+    })
+      .finally(() => {
+        loading.value = false;
+      })
+      .then(() => {
+        getFileList({
+          fid: paths.value[paths.value.length - 1]?.fid ?? '-11',
+        });
+      });
+  }
+};
 onMounted(() => {
   updateWidth();
   window.addEventListener('resize', updateWidth);
@@ -242,8 +354,11 @@ onUnmounted(() => {
         :file-list="fileList"
         :paths="paths"
         :if-use-checkbox="false"
-        :if-use-file-manager="false"
+        :if-use-file-manager="url ? false : true"
         @navigate-to="navigateTo"
+        @create-dir="createDir"
+        @rename="rename"
+        @delete="deleteFile"
       />
     </div>
   </Modal>
