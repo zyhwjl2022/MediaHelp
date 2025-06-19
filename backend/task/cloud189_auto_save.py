@@ -2,7 +2,7 @@
 import re
 from typing import Any, Dict
 from loguru import logger
-from utils import config_manager, scheduled_manager
+from utils import config_manager, logger_service, scheduled_manager
 from utils.cloud189.client import Cloud189Client
 from utils.magic_rename import MagicRename
 
@@ -11,6 +11,7 @@ class Cloud189AutoSave:
     params = {}
     task = {}
     task_name = ""
+    need_save_files_global = []
     def __init__(self):
       # 创建客户端实例，它会自动从配置文件加载session
       sys_config = config_manager.config_manager.get_config()
@@ -101,6 +102,7 @@ class Cloud189AutoSave:
               if re.search(r'\.(mp4|mkv|avi|rmvb|flv|wmv|mov|m4v)$', file["name"].lower()):
                   file["name_re"] = file_name_re
               need_save_files.append(file)
+              self.need_save_files_global.append(file)
               
       #保存文件
       file_ids = [{"fileId": file["id"], "fileName": file["name"], "isFolder": False} for file in need_save_files]
@@ -112,7 +114,7 @@ class Cloud189AutoSave:
       need_rename_files = need_rename_files.get("fileListAO", {}).get("fileList", [])
       for file in need_rename_files:
         before_file = next((f for f in need_save_files if f["name"] == file["name"]), None)
-        if before_file and "name_re" in before_file:
+        if (before_file and "name_re" in before_file) and before_file['name']!=before_file['name_re']:
           rename_response = await self.client.rename_file(file["id"], before_file["name_re"])
           logger.info(f"重命名文件 {file['name']} 为 {before_file['name_re']}: {rename_response}")
 
@@ -124,50 +126,64 @@ class Cloud189AutoSave:
         2. targetDir: 目标文件夹ID，默认为-11
         3. others: 其他参数
         """
-        self.task = task
-        self.params = task.get("params", {})
-        self.task_name = task.get("name", "")
-        target_dir = self.params.get("targetDir", "-11")
-        share_url = self.params.get("shareUrl")
+        try:  
+          self.task = task
+          self.params = task.get("params", {})
+          self.task_name = task.get("name", "")
+          logger_service.info_sync(f"天翼云盘自动转存任务 开始🏃‍➡️: {self.task_name} ({self.task.get('task', '')})")
+          target_dir = self.params.get("targetDir", "-11")
+          share_url = self.params.get("shareUrl")
+          if not share_url:
+              logger.error("缺少必要参数: shareUrl")
+              return
 
-        if not share_url:
-            logger.error("缺少必要参数: shareUrl")
-            return
-        
-        if not target_dir:
-            logger.error("缺少必要参数: targetDir")
-            return
-        # 验证账号登录
-        if not await self.client.login():
-            logger.error("天翼云盘登录失败")
-            return
-        # TODO: 后续的转存逻辑
-        # 获取分享信息
-        # 解析分享链接
-        logger.info(f"解析分享链接: {share_url}")
-        url, _ = self.client.parse_cloud_share(share_url)
-        if not url:
+          if not target_dir:
+              logger.error("缺少必要参数: targetDir")
+              return
+          # 验证账号登录
+          if not await self.client.login():
+              logger.error("天翼云盘登录失败")
+              return
+          # TODO: 后续的转存逻辑
+          # 获取分享信息
+          # 解析分享链接
+          logger.info(f"解析分享链接: {share_url}")
+          url, _ = self.client.parse_cloud_share(share_url)
+          if not url:
+              # 创建新的任务对象进行更新
+              updated_task = task.copy()
+              updated_task["params"] = task.get("params", {}).copy()
+              updated_task["params"]["isShareUrlValid"] = False
+              scheduled_manager.update_task(self.task_name, updated_task)
+              logger.error("无效的分享链接")
+              return
+          # 获取分享码
+          share_code = self.client.parse_share_code(url)
+
+          # 获取分享信息
+          share_info = await self.client.get_share_info(share_code)
+          if share_info.get("res_code") != 0:
             # 创建新的任务对象进行更新
             updated_task = task.copy()
             updated_task["params"] = task.get("params", {}).copy()
             updated_task["params"]["isShareUrlValid"] = False
             scheduled_manager.update_task(self.task_name, updated_task)
-            logger.error("无效的分享链接")
+            logger.error("获取分享信息失败")
             return
-        # 获取分享码
-        share_code = self.client.parse_share_code(url)
-            
-        # 获取分享信息
-        share_info = await self.client.get_share_info(share_code)
-        if share_info.get("res_code") != 0:
-          # 创建新的任务对象进行更新
-          updated_task = task.copy()
-          updated_task["params"] = task.get("params", {}).copy()
-          updated_task["params"]["isShareUrlValid"] = False
-          scheduled_manager.update_task(self.task_name, updated_task)
-          logger.error("获取分享信息失败")
-          return
-        await self.dir_check_and_save(share_info, self.params.get("sourceDir", ""))
-        
+          self.need_save_files_global = []
+          await self.dir_check_and_save(share_info, self.params.get("sourceDir", ""))
+          # 格式化打印需要保存的文件列表
+          if self.need_save_files_global:
+            file_list_str = "\n".join([f"🎬 {file['name']}" + (f"\n   ↳ 将重命名为: {file['name_re']}" if file.get('name_re') else "") for file in self.need_save_files_global])
+            logger_service.info_sync(f"天翼云盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 保存的文件:\n{file_list_str}")
+          else:
+            logger_service.info_sync(f"天翼云盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 没有需要保存的文件")
+          logger_service.info_sync(f"天翼云盘自动转存任务 结束🏁: {self.task_name} ({self.task.get('task', '')})")
+          return {
+            "task_name": f'{self.task_name} ({self.task.get("task", "")})',
+            "need_save_files": [{"file_name": file["name"], "file_name_re": file.get("name_re")} for file in self.need_save_files_global]
+          }
+        except Exception as e:
+          logger_service.error_sync(f"天翼云盘自动转存任务 异常🚨: {self.task_name} ({self.task.get('task', '')}) {e}")
 
 

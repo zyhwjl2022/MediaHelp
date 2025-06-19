@@ -15,6 +15,7 @@ import {
   disableCornTaskApi,
   enableCornTaskApi,
   getCornTaskListApi,
+  runCornTaskApi,
 } from './api';
 import TaskEditor from './components/TaskEditor.vue';
 
@@ -24,10 +25,11 @@ const gridOptions: VxeGridProps = {
   minHeight: 500,
   columns: [
     { title: '序号', type: 'seq', width: 50 },
-    { field: 'name', title: '任务名称' },
+    { field: 'name', title: '任务名称', minWidth: 150 },
     {
       field: 'next_run',
       title: '下次运行时间',
+      minWidth: 180,
       formatter: ({ cellValue }): string => {
         if (cellValue) {
           return dayjs(cellValue).format('YYYY-MM-DD HH:mm:ss');
@@ -38,6 +40,7 @@ const gridOptions: VxeGridProps = {
     {
       field: 'enabled',
       title: '状态',
+      minWidth: 100,
       slots: {
         default: 'enabled',
       },
@@ -45,6 +48,7 @@ const gridOptions: VxeGridProps = {
     {
       field: 'task',
       title: '任务类型',
+      minWidth: 100,
       formatter: ({ cellValue }): string => {
         if (cellValue === 'quark_auto_save') {
           return '夸克自动转存';
@@ -59,7 +63,7 @@ const gridOptions: VxeGridProps = {
       field: 'action',
       title: '操作',
       fixed: 'right',
-      width: 180,
+      width: 220,
       slots: {
         default: 'action',
       },
@@ -79,11 +83,16 @@ const gridOptions: VxeGridProps = {
 };
 
 const [Grid, gridApi] = useVbenVxeGrid({ gridOptions });
-
+const loading = ref(false);
 const reload = () => {
-  getCornTaskListApi().then((res: any) => {
-    gridApi.grid.loadData(res || []);
-  });
+  loading.value = true;
+  getCornTaskListApi()
+    .then((res: any) => {
+      gridApi.grid.loadData(res || []);
+    })
+    .finally(() => {
+      loading.value = false;
+    });
 };
 
 onMounted(() => {
@@ -111,6 +120,18 @@ const deleteRowEvent = (_row: any) => {
   });
 };
 
+const runTaskEvent = (row: any) => {
+  loading.value = true;
+  runCornTaskApi(row.name)
+    .then(() => {
+      message.success('执行成功');
+      reload();
+    })
+    .finally(() => {
+      loading.value = false;
+    });
+};
+
 const handleSwitchEvent = (row: any) => {
   if (row.enabled) {
     disableCornTaskApi(row.name).then(() => {
@@ -126,9 +147,10 @@ const handleSwitchEvent = (row: any) => {
 };
 </script>
 <template>
-  <div class="h-full">
+  <div class="h-full" v-loading="loading">
     <Grid class="mt-0">
       <template #toolbar-tools>
+        <Button @click="reload" type="primary" class="mr-2">刷新</Button>
         <Button type="primary" @click="addRowEvent" class="mb-2 mr-[10px] mt-2">
           创建定时任务
         </Button>
@@ -140,6 +162,9 @@ const handleSwitchEvent = (row: any) => {
         }}</span>
       </template>
       <template #action="{ row }">
+        <Button type="link" @click="runTaskEvent(row)" success>
+          立即执行
+        </Button>
         <Button type="link" @click="editRowEvent(row)">编辑</Button>
         <Button type="link" @click="deleteRowEvent(row)" danger>删除</Button>
       </template>

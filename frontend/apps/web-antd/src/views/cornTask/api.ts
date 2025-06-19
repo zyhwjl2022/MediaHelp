@@ -48,3 +48,30 @@ export async function createCornTaskApi(params: any) {
 export async function updateCornTaskApi(params: any) {
   return requestClient.put(`/scheduled/tasks/${params.name}`, params);
 }
+
+/**
+ * 立即执行定时任务
+ */
+export async function runCornTaskApi(taskName: string) {
+  return requestClient.post(`/scheduled/execute/${taskName}`, {});
+}
+
+/**
+ * 获取日期模块
+ */
+export async function getModuleLogListApi() {
+  return requestClient.get('/logs/modules', {});
+}
+
+/**
+ * 获取日志列表
+ */
+export async function getLogListApi(params: any) {
+  return requestClient.get('/logs/list', {
+    params: {
+      ...params,
+      page: 1,
+      pageSize: 50,
+    },
+  });
+}

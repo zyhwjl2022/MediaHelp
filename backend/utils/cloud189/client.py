@@ -347,9 +347,7 @@ class Cloud189Client:
             "taskInfos": json.dumps(task_params["taskInfos"], ensure_ascii=False),  # 将taskInfos转为JSON字符串
             "targetFolderId": task_params["targetFolderId"],
             **({"shareId": task_params["shareId"]} if "shareId" in task_params else {})
-        }    
-        logger.info(f"创建批量任务参数: {form_data}")
-            
+        }                
         result = await self._send_request(
             "POST",
             f"{WEB_URL}/api/open/batch/createBatchTask.action",
@@ -471,7 +469,6 @@ class Cloud189Client:
         :param folder_name: 文件夹名称
         :param parent_id: 父文件夹ID
         """
-        logger.info(f"创建文件夹参数: {folder_name}, {parent_id}")
         result = await self._send_request(
             "POST",
             f"{WEB_URL}/api/open/file/createFolder.action",
@@ -530,7 +527,6 @@ class Cloud189Client:
                 "targetFolderId": "",
             }
             
-            logger.info(f"创建删除任务参数: {task_params}")
             task = await self.create_batch_task(task_params)
             
             # 检查任务状态
@@ -708,7 +704,6 @@ class Cloud189Client:
             share_info = None
             if share_url:
                 # 解析分享链接
-                logger.info(f"解析分享链接: {share_url}")
                 url, _ = self.parse_cloud_share(share_url)
                 if not url:
                     raise Cloud189Error("无效的分享链接")
@@ -750,7 +745,6 @@ class Cloud189Client:
                 "shareId": share_info["shareId"]
             }
             
-            logger.info(f"任务参数: {task_params}")
             
             # 创建任务
             task = await self.create_batch_task(task_params)

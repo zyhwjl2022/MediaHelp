@@ -3,7 +3,7 @@ import asyncio
 import re
 from typing import Any, Dict
 from loguru import logger
-from utils import config_manager, scheduled_manager
+from utils import config_manager, emby_manager, logger_service, scheduled_manager
 from utils.magic_rename import MagicRename
 from utils.quark_helper import QuarkHelper
 
@@ -13,6 +13,7 @@ class QuarkAutoSave:
     params = {}
     task = {}
     savepath_fid = {"/": "0"}
+    need_save_files_global = []
     
   
     def __init__(self):
@@ -96,7 +97,7 @@ class QuarkAutoSave:
         mr.set_taskname(self.task_name)
          # 魔法正则转换
         pattern, replace = mr.magic_regex_conv(
-            self.params.get("pattern", "$TV_PRO"), self.params.get("replace", "")
+            self.params.get("pattern", ""), self.params.get("replace", "")
         )
         dir_name_list = [dir_file["file_name"] for dir_file in target_file_list]
         for share_file in files:
@@ -128,6 +129,7 @@ class QuarkAutoSave:
                         if re.search(r'\.(mp4|mkv|avi|rmvb|flv|wmv|mov|m4v)$', share_file["file_name"].lower()):
                             share_file["file_name_re"] = file_name_re
                         need_save_files.append(share_file)
+                        self.need_save_files_global.append(share_file)
               else:
                 # 文件夹
                 # 创建文件夹
@@ -158,6 +160,7 @@ class QuarkAutoSave:
             task_status = await self.helper.sdk.get_task_status(task_id)
                 
             if task_status.get("code") == 0:
+              await asyncio.sleep(5)
               # #重新获取文件列表
               re_target_files = await self.helper.sdk.get_file_list(to_pdir_fid)
               if re_target_files.get("code") != 0:
@@ -202,58 +205,72 @@ class QuarkAutoSave:
         2. targetDir: 目标文件夹ID，默认为根目录
         3. sourcePath: 源路径，默认为根目录
         """
-        self.task = task
-        self.params = task.get("params", {})
-        self.task_name = task.get("name", "")
-        share_url = self.params.get("shareUrl")
-        target_dir = self.params.get("targetDir", "/")
-        isShareUrlValid = self.params.get("isShareUrlValid", True)
+        try:
+          self.task = task
+          self.params = task.get("params", {})
+          self.task_name = task.get("name", "")
+          await emby_manager.emby_manager.searchAndRefreshItem(self.task_name)
+          logger_service.info_sync(f"夸克网盘自动转存任务 开始🏃‍➡️: {self.task_name} ({self.task.get('task', '')})") 
+          share_url = self.params.get("shareUrl")
+          target_dir = self.params.get("targetDir", "/")
+          isShareUrlValid = self.params.get("isShareUrlValid", True)
+          if not isShareUrlValid:
+              logger.error(f"任务 [{self.task_name}] 分享链接无效: {share_url} 跳过执行")
+              return
+          if not share_url:
+              logger.error(f"任务 [{self.task_name}] 缺少必要参数: shareUrl")
+              return
+          if not target_dir:
+              logger.error(f"任务 [{self.task_name}] 缺少必要参数: targetDir")
+              return
 
-        if not isShareUrlValid:
-            logger.error(f"任务 [{self.task_name}] 分享链接无效: {share_url} 跳过执行")
-            return
-        if not share_url:
-            logger.error(f"任务 [{self.task_name}] 缺少必要参数: shareUrl")
-            return
-        if not target_dir:
-            logger.error(f"任务 [{self.task_name}] 缺少必要参数: targetDir")
-            return
+          ## 验证cookie是否有效
+          if not await self.helper.init():
+              logger.error(f"任务 [{self.task_name}] 夸克网盘初始化失败，请检查 cookie 是否有效")
+              return
+          # 获取分享信息 看看分享链接是否有效
+          # 解析分享链接
+          share_info = self.helper.sdk.extract_share_info(share_url)
+          if not share_info["share_id"]:
+             logger.error(f"分享链接无效: {share_url}")
+             # 创建新的任务对象进行更新
+             updated_task = task.copy()
+             updated_task["params"] = task.get("params", {}).copy()
+             updated_task["params"]["isShareUrlValid"] = False
+             scheduled_manager.update_task(self.task_name, updated_task)
+             return
+          # 获取分享信息
+          share_response = await self.helper.sdk.get_share_info(
+              share_info["share_id"], 
+              share_info["password"]
+          )
+          if share_response.get("code") != 0:
+              logger.error(f"分享链接无效: {share_url}")
+              # 创建新的任务对象进行更新
+              updated_task = task.copy()
+              updated_task["params"] = task.get("params", {}).copy()
+              updated_task["params"]["isShareUrlValid"] = False
+              scheduled_manager.update_task(self.task_name, updated_task)
+              return
+          # 获取分享文件列表
+          token = share_response.get("data", {}).get("stoken")
+          if not token:
+              logger.error(f"获取分享token失败: {share_response}")
+              return
 
-        ## 验证cookie是否有效
-        if not await self.helper.init():
-            logger.error(f"任务 [{self.task_name}] 夸克网盘初始化失败，请检查 cookie 是否有效")
-            return
-        # 获取分享信息 看看分享链接是否有效
-        # 解析分享链接
-        share_info = self.helper.sdk.extract_share_info(share_url)
-        if not share_info["share_id"]:
-           logger.error(f"分享链接无效: {share_url}")
-           # 创建新的任务对象进行更新
-           updated_task = task.copy()
-           updated_task["params"] = task.get("params", {}).copy()
-           updated_task["params"]["isShareUrlValid"] = False
-           scheduled_manager.update_task(self.task_name, updated_task)
-           return
-        # 获取分享信息
-        share_response = await self.helper.sdk.get_share_info(
-            share_info["share_id"], 
-            share_info["password"]
-        )
-        if share_response.get("code") != 0:
-            logger.error(f"分享链接无效: {share_url}")
-            # 创建新的任务对象进行更新
-            updated_task = task.copy()
-            updated_task["params"] = task.get("params", {}).copy()
-            updated_task["params"]["isShareUrlValid"] = False
-            scheduled_manager.update_task(self.task_name, updated_task)
-            return
-
-        # 获取分享文件列表
-        token = share_response.get("data", {}).get("stoken")
-        if not token:
-            logger.error(f"获取分享token失败: {share_response}")
-            return
-        
-        await self.dir_check_and_save(share_info["share_id"], token,share_info['dir_id'])
-        
+          await self.dir_check_and_save(share_info["share_id"], token,share_info['dir_id'])
+            # 格式化打印需要保存的文件列表
+          if self.need_save_files_global:
+            file_list_str = "\n".join([f"🎬 {file['file_name']}" + (f"\n   ↳ 将重命名为: {file['file_name_re']}" if file.get('file_name_re') else "") for file in self.need_save_files_global])
+            logger_service.info_sync(f"夸克网盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 保存的文件:\n{file_list_str}")
+          else:
+            logger_service.info_sync(f"夸克网盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 没有需要保存的文件")
+          logger_service.info_sync(f"夸克网盘自动转存任务 结束🏁: {self.task_name} ({self.task.get('task', '')})")
+          return {
+            "task_name": f'{self.task_name}',
+            "task": self.task.get("task", ""),
+            "need_save_files": self.need_save_files_global
+          }
+        except Exception as e:
+          logger_service.error_sync(f"夸克网盘自动转存任务 异常🚨: {self.task_name} ({self.task.get('task', '')}) {e}")
 

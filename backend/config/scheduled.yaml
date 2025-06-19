@@ -17,8 +17,32 @@ tasks:
   cron: '* 19-23 * * *'
   params:
     shareUrl: https://cloud.189.cn/t/UBvyUziiA3qa
-    targetDir: '623171198639657372'
+    targetDir: '825081198641713764'
     sourceDir: '123341197928769983'
     startMagic: []
+    pattern: ''
+    replace: ''
   enabled: true
-  next_run: '2025-06-18T19:00:00'
+  next_run: '2025-06-19T19:00:00'
+  last_execution:
+    success: true
+    message: 任务自动执行完成
+    execution_time: '2025-06-19T18:13:08.438765'
+    is_manual: false
+  is_running: false
+- task: quark_auto_save
+  name: 仙逆
+  cron: 0 19-23 * * *
+  params:
+    shareUrl: https://pan.quark.cn/s/b38ce30268dc
+    targetDir: /
+    startMagic: []
+    pattern: ''
+    replace: ''
+  enabled: false
+  next_run: '2025-06-19T19:00:00'
+  last_execution:
+    success: true
+    message: 任务自动执行完成
+    execution_time: '2025-06-19T18:13:10.446638'
+    is_manual: false

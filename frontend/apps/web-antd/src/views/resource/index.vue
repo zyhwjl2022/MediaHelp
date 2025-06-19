@@ -38,6 +38,7 @@ const loadResource = async (keyword?: string) => {
         flatResourceList.push({
           ...item.channelInfo,
           ...item2,
+          keyword,
         });
       });
     }

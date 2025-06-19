@@ -16,6 +16,11 @@ import {
 } from 'ant-design-vue';
 
 import { getResourceListApi } from '#/views/resource/api';
+import {
+  getCloudTypeByTask,
+  getCloudTypeByUrl,
+  getTaskByUrl,
+} from '#/views/utils';
 
 import {
   createCornTaskApi,
@@ -36,19 +41,11 @@ const open = defineModel<boolean>('open', {
   type: Boolean,
 });
 const formRef = ref<any>(null);
-const setCloudType = (type: string) => {
-  if (type === 'quark_auto_save') {
-    cloudType.value = 'quark';
-  } else if (type === 'cloud189_auto_save') {
-    cloudType.value = 'tianyiyun';
-  }
-};
-
 watch(
   () => props.task,
   (newVal) => {
     const task = newVal;
-    setCloudType(task.task);
+    cloudType.value = getCloudTypeByTask(task.task);
     currentTask.value.task = task.task;
     currentTask.value.name = task.name;
     const params = task?.params || {};
@@ -56,6 +53,8 @@ watch(
     currentTask.value.targetDir = params.targetDir;
     currentTask.value.sourceDir = params.sourceDir;
     currentTask.value.startMagic = params.startMagic || [];
+    currentTask.value.pattern = params.pattern;
+    currentTask.value.replace = params.replace;
     currentTask.value.cron = task.cron ?? '0 19-23 * * *';
   },
 );
@@ -171,24 +170,23 @@ const onJump = (item: any) => {
 };
 const selectFolderOpen = ref(false);
 const url = ref('');
+const onShareUrlChange: any = (e: any) => {
+  currentTask.value.task = getTaskByUrl(e.target.value);
+  cloudType.value = getCloudTypeByUrl(e.target.value);
+};
 const onSelectFolder = () => {
   if (!currentTask.value?.shareUrl) {
     message.warning('请先输入分享链接');
     return;
   }
   const shareUrl = currentTask.value.shareUrl;
-  if (shareUrl.includes('quark')) {
-    cloudType.value = 'quark';
-    currentTask.value.task = 'quark_auto_save';
-  } else if (shareUrl.includes('cloud189')) {
-    cloudType.value = 'tianyiyun';
-    currentTask.value.task = 'cloud189_auto_save';
-  }
+  currentTask.value.task = getTaskByUrl(shareUrl);
+  cloudType.value = getCloudTypeByUrl(shareUrl);
   url.value = shareUrl;
   selectFolderOpen.value = true;
 };
 const onSelecSelftFolder = () => {
-  setCloudType(currentTask.value.task);
+  cloudType.value = getCloudTypeByTask(currentTask.value.task);
   if (!cloudType.value) {
     message.warning('请先选择任务类型');
     return;
@@ -209,6 +207,11 @@ const onSelectFolderOkSelfTianyiyun = (fid: string) => {
   currentTask.value.targetDir = fid;
 };
 
+// 重名命规则
+const onSelectPattern: any = (value: string) => {
+  currentTask.value.pattern = value;
+  currentTask.value.replace = value;
+};
 // 保存文件规则
 const onAddRule = () => {
   currentTask.value.startMagic?.push({
@@ -231,6 +234,8 @@ const onOk = () => {
         targetDir: res.targetDir,
         sourceDir: currentTask.value.sourceDir,
         startMagic: res.startMagic,
+        pattern: currentTask.value.pattern,
+        replace: currentTask.value.replace,
       },
     };
     const methods = props.task?.name ? updateCornTaskApi : createCornTaskApi;
@@ -304,6 +309,7 @@ const onOk = () => {
           <Input
             v-model:value="currentTask.shareUrl"
             style="width: calc(100% - 88px)"
+            @change="onShareUrlChange"
           />
           <Button type="primary" @click="onSelectFolder">选择目录</Button>
         </Input.Group>
@@ -320,6 +326,30 @@ const onOk = () => {
             style="width: calc(100% - 88px)"
           />
           <Button type="primary" @click="onSelecSelftFolder">选择目录</Button>
+        </Input.Group>
+      </FormItem>
+      <FormItem label="重名命规则">
+        <Input.Group compact>
+          <AutoComplete
+            v-model:value="currentTask.pattern"
+            :options="[
+              { label: '电视节目', value: '$TV_PRO' },
+              { label: '综艺', value: '$SHOW_PRO' },
+            ]"
+            @select="onSelectPattern"
+            style="width: 50%"
+          >
+            <Input
+              v-model:value="currentTask.pattern"
+              placeholder="请输入匹配规则"
+            />
+          </AutoComplete>
+          <Input
+            v-model:value="currentTask.replace"
+            style="width: 50%"
+            allow-clear
+            placeholder="请输入替换规则"
+          />
         </Input.Group>
       </FormItem>
       <FormItem label="保存文件规则" name="startMagic">
@@ -358,6 +388,12 @@ const onOk = () => {
             </Button>
           </Input.Group>
         </div>
+      </FormItem>
+      <FormItem label="保存文件正则" name="search_pattern">
+        <Input
+          v-model:value="currentTask.search_pattern"
+          placeholder="请输入保存文件正则"
+        />
       </FormItem>
       <FormItem
         label="定时规则"

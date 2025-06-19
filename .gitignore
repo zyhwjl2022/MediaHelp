@@ -7,7 +7,7 @@ wheels/
 *.egg-info
 log/
 nacos-data/
-
+*.db
 # Virtual environments
 .venv
 

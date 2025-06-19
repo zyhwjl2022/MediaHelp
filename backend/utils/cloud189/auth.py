@@ -201,7 +201,10 @@ class CloudAuthClient:
         # 1. 获取重定向URL
         response = await self.request.get(
             f"{WEB_URL}/api/portal/unifyLoginForPC.action",
-            params=params
+            params=params,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
         )
         
         # 2. 带Cookie访问重定向URL

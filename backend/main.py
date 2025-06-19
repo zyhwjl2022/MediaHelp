@@ -12,6 +12,7 @@ from loguru import logger
 import logging
 from crud.config import settings
 from api.main import api_router
+from utils.emby_manager import emby_manager
 from utils.exceptions import APIException, api_exception_handler, validation_exception_handler, http_exception_handler, create_error_response
 from utils.scheduler import task_scheduler
 from utils.logger_service import logger_service
@@ -90,6 +91,8 @@ async def lifespan(app: FastAPI):
     try:
         # 清理日志文件
         await cleanup_log_files()
+        logger.info("EMBY刷新媒体库")
+        logger.info(await emby_manager.refresh_library())
         
         # 启动定时任务调度器
         scheduler_task = asyncio.create_task(task_scheduler.start())

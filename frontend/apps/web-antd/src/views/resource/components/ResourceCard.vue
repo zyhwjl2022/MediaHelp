@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 
-import { Button, Tag } from 'ant-design-vue';
+import { Button, message, Tag } from 'ant-design-vue';
+
+import TaskEditor from '#/views/cornTask/components/TaskEditor.vue';
+import { getTaskByUrl } from '#/views/utils';
 
 const props = defineProps<{
   item: any;
@@ -53,6 +56,24 @@ const onJump = () => {
 
 const onSave = () => {
   emit('save', props.item);
+};
+// 定时任务
+const open = ref(false);
+const currentTask = ref<any>({});
+const onCreateTask = () => {
+  const shareUrl = props.item.cloudLinks?.[0];
+  if (shareUrl) {
+    currentTask.value = {
+      task: getTaskByUrl(shareUrl),
+      name: props.item.keyword,
+      params: {
+        shareUrl,
+      },
+    };
+    open.value = true;
+  } else {
+    message.error('创建任务出错，没有分享链接');
+  }
 };
 </script>
 
@@ -118,6 +139,10 @@ const onSave = () => {
       >
         转存
       </Button>
+      <Button type="link" class="m-2" size="middle" @click="onCreateTask">
+        创建定时任务
+      </Button>
     </div>
+    <TaskEditor v-model:open="open" :task="currentTask" />
   </div>
 </template>

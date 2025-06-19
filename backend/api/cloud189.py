@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 from pydantic import BaseModel
 
+from api.deps import get_current_user
+from models.user import User
 from schemas.response import Response
 from utils.cloud189.client import Cloud189Client
 from utils.cloud189.types import FileInfo, ShareInfo
@@ -97,7 +99,9 @@ async def get_client() -> Cloud189Client:
     return _client_cache
 
 @router.post("/init")
-async def init_client():
+async def init_client(
+    current_user: User = Depends(get_current_user)
+):
     """初始化客户端"""
     try:
         # 从系统配置中获取账号信息
@@ -128,7 +132,8 @@ async def init_client():
 @router.post("/files")
 async def list_files(
     req: FileListRequest,
-    client: Cloud189Client = Depends(get_client)
+    client: Cloud189Client = Depends(get_client),
+    current_user: User = Depends(get_current_user)
 ) -> Response[Any]:
     """获取文件列表"""
     try:
@@ -140,7 +145,8 @@ async def list_files(
 @router.post("/search")
 async def search_files(
     req: SearchRequest,
-    client: Cloud189Client = Depends(get_client)
+    client: Cloud189Client = Depends(get_client),
+    current_user: User = Depends(get_current_user)
 ) -> List[FileInfo]:
     """搜索文件"""
     try:
@@ -153,7 +159,8 @@ async def search_files(
 async def get_download_url(
     file_id: str,
     share_id: Optional[str] = None,
-    client: Cloud189Client = Depends(get_client)
+    client: Cloud189Client = Depends(get_client),
+    current_user: User = Depends(get_current_user)
 ) -> str:
     """获取下载链接"""
     try:
@@ -164,7 +171,8 @@ async def get_download_url(
 @router.post("/folder")
 async def create_folder(
     req: CreateFolderRequest,
-    client: Cloud189Client = Depends(get_client)
+    client: Cloud189Client = Depends(get_client),
+    current_user: User = Depends(get_current_user)
 ):
     """创建文件夹"""
     try:
@@ -176,7 +184,8 @@ async def create_folder(
 @router.post("/rename")
 async def rename_file(
     req: RenameRequest,
-    client: Cloud189Client = Depends(get_client)
+    client: Cloud189Client = Depends(get_client),
+    current_user: User = Depends(get_current_user)
 ):
     """重命名文件"""
     try:
@@ -188,7 +197,8 @@ async def rename_file(
 @router.post("/share/info")
 async def get_share_info(
     req: ShareRequest,
-    client: Cloud189Client = Depends(get_client)
+    client: Cloud189Client = Depends(get_client),
+    current_user: User = Depends(get_current_user)
 ) -> ShareInfo:
     """获取分享信息"""
     try:
@@ -215,7 +225,8 @@ async def get_share_info(
 @router.post("/share/save")
 async def save_shared_files(
     req: SaveShareRequest,
-    client: Cloud189Client = Depends(get_client)
+    client: Cloud189Client = Depends(get_client),
+    current_user: User = Depends(get_current_user)
 ):
     """保存分享文件"""
     try:
@@ -231,7 +242,8 @@ async def save_shared_files(
 @router.post("/share/files")
 async def list_share_files(
     req: ShareFilesRequest,
-    client: Cloud189Client = Depends(get_client)
+    client: Cloud189Client = Depends(get_client),
+    current_user: User = Depends(get_current_user)
 ) -> Response[Any]:
     """获取分享文件列表"""
     try:
@@ -261,7 +273,11 @@ async def list_share_files(
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/delete")
-async def delete_files(request: DeleteFilesRequest, client: Cloud189Client = Depends(get_client)):
+async def delete_files(
+    request: DeleteFilesRequest, 
+    client: Cloud189Client = Depends(get_client),
+    current_user: User = Depends(get_current_user)
+):
     """
     删除文件或文件夹
     :param request: 删除文件请求
