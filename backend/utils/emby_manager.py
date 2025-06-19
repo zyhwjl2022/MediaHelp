@@ -340,12 +340,12 @@ class EmbyManager:
             # 执行刷新
             if item_id:
                 logger.info(f"找到匹配的项目: {item_id} 刷新")
-                refresh_result = await self.refresh_item(item_id)
-                return refresh_result
+                await self.refresh_item(item_id)
+                return True
             else:
                 logger.info("未找到匹配的项目,刷新整个媒体库")
-                refresh_library_result = await self.refresh_library()
-                return refresh_library_result
+                await self.refresh_library()
+                return True
             
         except Exception as e:
             logger.error(f"搜索并刷新项目时出错: {str(e)}")
