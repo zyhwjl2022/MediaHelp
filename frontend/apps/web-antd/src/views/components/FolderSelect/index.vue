@@ -133,6 +133,9 @@ const onDelete = (file: any) => {
 
 const onSave = (file: any) => {
   isEditing.value[file.fid] = false;
+  if (file.file_name === fileNameEditing.value) {
+    return;
+  }
   emit('rename', { ...file, file_name: fileNameEditing.value });
 };
 </script>
