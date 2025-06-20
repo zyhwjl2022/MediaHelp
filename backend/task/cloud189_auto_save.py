@@ -152,23 +152,35 @@ class Cloud189AutoSave:
           if not url:
               # 创建新的任务对象进行更新
               updated_task = task.copy()
+              updated_task['enabled'] = False
               updated_task["params"] = task.get("params", {}).copy()
               updated_task["params"]["isShareUrlValid"] = False
-              scheduled_manager.update_task(self.task_name, updated_task)
+              scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
               logger.error("无效的分享链接")
               return
           # 获取分享码
           share_code = self.client.parse_share_code(url)
 
           # 获取分享信息
-          share_info = await self.client.get_share_info(share_code)
-          if share_info.get("res_code") != 0:
+          try:
+            share_info = await self.client.get_share_info(share_code)
+            if share_info.get("res_code") != 0:
+              # 创建新的任务对象进行更新
+              updated_task = task.copy()  
+              updated_task['enabled'] = False
+              updated_task["params"] = task.get("params", {}).copy()
+              updated_task["params"]["isShareUrlValid"] = False
+              scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
+              logger.error("获取分享信息失败")
+              return
+          except Exception as e:
             # 创建新的任务对象进行更新
             updated_task = task.copy()
+            updated_task['enabled'] = False
             updated_task["params"] = task.get("params", {}).copy()
             updated_task["params"]["isShareUrlValid"] = False
-            scheduled_manager.update_task(self.task_name, updated_task)
-            logger.error("获取分享信息失败")
+            scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
+            logger.error(f"获取分享信息失败: {e}")
             return
           self.need_save_files_global = []
           await self.dir_check_and_save(share_info, self.params.get("sourceDir", ""))

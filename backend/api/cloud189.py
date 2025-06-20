@@ -270,7 +270,7 @@ async def list_share_files(
         
         return Response(data=files)
     except Cloud189Error as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str('获取分享文件列表失败,分享链接失效'))
 
 @router.post("/delete")
 async def delete_files(

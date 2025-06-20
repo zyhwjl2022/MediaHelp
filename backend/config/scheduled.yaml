@@ -23,26 +23,27 @@ tasks:
     pattern: ''
     replace: ''
   enabled: true
-  next_run: '2025-06-19T19:00:00'
+  next_run: '2025-06-20T19:00:00'
   last_execution:
     success: true
     message: 任务自动执行完成
-    execution_time: '2025-06-19T18:13:08.438765'
+    execution_time: '2025-06-20T15:47:40.306305'
     is_manual: false
   is_running: false
-- task: quark_auto_save
-  name: 仙逆
+- task: cloud189_auto_save
+  name: 临江仙
   cron: 0 19-23 * * *
   params:
-    shareUrl: https://pan.quark.cn/s/b38ce30268dc
-    targetDir: /
+    shareUrl: https://cloud.189.cn/t/UVnIbquI7bQ3
+    targetDir: '-11'
     startMagic: []
-    pattern: ''
-    replace: ''
+    pattern: $TV_PRO
+    isShareUrlValid: false
+    replace: $TV_PRO
   enabled: false
-  next_run: '2025-06-19T19:00:00'
+  next_run: '2025-06-20T19:00:00'
   last_execution:
     success: true
     message: 任务自动执行完成
-    execution_time: '2025-06-19T18:13:10.446638'
+    execution_time: '2025-06-20T15:47:42.841876'
     is_manual: false

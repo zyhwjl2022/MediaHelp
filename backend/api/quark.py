@@ -520,19 +520,24 @@ async def get_share_files(
             return Response(code=400, message="无效的分享链接")
             
         # 获取分享信息
-        share_response = await helper.sdk.get_share_info(
-            share_info["share_id"], 
-            share_info["password"]
-        )
-        
-        if share_response.get("code") != 0:
-            return Response(
-                code=400, 
-                message=share_response.get("message", "获取分享信息失败")
+        try:    
+            share_response = await helper.sdk.get_share_info(
+                share_info["share_id"], 
+                share_info["password"]
             )
+        
+            if share_response.get("code") != 0:
+                return Response(
+                    code=400, 
+                    message=share_response.get("message", "获取分享信息失败：分享链接失效")
+                )
+        except Exception as e:
+            logger.error(f"获取分享信息失败: {str(e)}")
+            return Response(code=400, message=f"获取分享信息失败: 分享链接失效")
+        
         token = share_response.get("data", {}).get("stoken")
         if not token:
-            return Response(code=400, message="获取分享token失败")
+                return Response(code=400, message="获取分享token失败")
         # 获取分享文件列表
         file_list = await helper.sdk.get_share_file_list(
             share_info["share_id"],

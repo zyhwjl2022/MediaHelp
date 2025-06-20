@@ -235,23 +235,35 @@ class QuarkAutoSave:
              logger.error(f"分享链接无效: {share_url}")
              # 创建新的任务对象进行更新
              updated_task = task.copy()
+             updated_task['enabled'] = False
              updated_task["params"] = task.get("params", {}).copy()
              updated_task["params"]["isShareUrlValid"] = False
-             scheduled_manager.update_task(self.task_name, updated_task)
+             scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
              return
           # 获取分享信息
-          share_response = await self.helper.sdk.get_share_info(
-              share_info["share_id"], 
-              share_info["password"]
-          )
-          if share_response.get("code") != 0:
+          try:
+            share_response = await self.helper.sdk.get_share_info(
+                share_info["share_id"], 
+                share_info["password"]
+            )
+            if share_response.get("code") != 0:
               logger.error(f"分享链接无效: {share_url}")
               # 创建新的任务对象进行更新
               updated_task = task.copy()
+              updated_task['enabled'] = False
               updated_task["params"] = task.get("params", {}).copy()
               updated_task["params"]["isShareUrlValid"] = False
-              scheduled_manager.update_task(self.task_name, updated_task)
+              scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
               return
+          except Exception as e:
+            logger.error(f"获取分享信息失败: {e}")
+            # 创建新的任务对象进行更新
+            updated_task = task.copy()
+            updated_task['enabled'] = False
+            updated_task["params"] = task.get("params", {}).copy()
+            updated_task["params"]["isShareUrlValid"] = False
+            scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
+            return
           # 获取分享文件列表
           token = share_response.get("data", {}).get("stoken")
           if not token:
