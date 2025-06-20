@@ -39,7 +39,7 @@ const handleClick = (item: any) => {
     <Card
       v-for="item in mediaList"
       :key="item.id"
-      class="w-[160px]"
+      class="w-[160px] cursor-pointer"
       @click="handleClick(item)"
     >
       <template #cover>

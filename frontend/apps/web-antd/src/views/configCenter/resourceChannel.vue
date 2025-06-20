@@ -37,7 +37,7 @@ const gridOptions: VxeGridProps<RowType> = {
     { title: '序号', type: 'seq', width: 50 },
     { editRender: { name: 'input' }, field: 'id', title: '频道ID' },
     { editRender: { name: 'input' }, field: 'name', title: '频道名称' },
-    // { slots: { default: 'action' }, title: '操作' },
+    { slots: { default: 'action' }, title: '操作', minWidth: 80 },
   ],
   editConfig: {
     trigger: 'click',
@@ -94,6 +94,10 @@ onActivated(() => {
     proxyConfig.value = res;
   });
 });
+
+const deleteRowEvent = (row: RowType) => {
+  gridApi.grid.remove(row);
+};
 </script>
 
 <template>
@@ -115,6 +119,9 @@ onActivated(() => {
         <Button type="primary" @click="addRowEvent" class="mr-[10px]">
           新增
         </Button>
+      </template>
+      <template #action="{ row }">
+        <Button type="link" @click="deleteRowEvent(row)" danger>删除</Button>
       </template>
     </Grid>
     <Affix :offset-bottom="50">
