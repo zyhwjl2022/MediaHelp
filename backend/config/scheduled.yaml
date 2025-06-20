@@ -12,34 +12,15 @@ tasks:
       value: 175
     pattern: $TV_PRO
     isShareUrlValid: true
-    replace: ''
+    replace: ${TASKNAME}.S01E{E}.{EXT}
   enabled: true
   next_run: '2025-06-25T19:00:00'
   last_execution:
     success: true
-    message: 任务自动执行完成
-    execution_time: '2025-06-20T17:37:40.826609'
-    is_manual: false
-- task: quark_auto_save
-  name: 仙逆
-  cron: 0 19-23 * * 1
-  params:
-    shareUrl: https://pan.quark.cn/s/9a602fb88089#/list/share/3ef42c29fbb64385a179d6ecae4566ff-千你
-    targetDir: /仙逆
-    startMagic:
-    - type: '{E}'
-      symbol: '>'
-      value: 90
-    pattern: $TV_PRO
-    isShareUrlValid: true
-    replace: ''
-  enabled: true
-  next_run: '2025-06-23T19:00:00'
-  last_execution:
-    success: true
-    message: 任务自动执行完成
-    execution_time: '2025-06-20T17:37:41.849609'
-    is_manual: false
+    message: 任务手动执行完成
+    execution_time: '2025-06-20T10:29:32.913769'
+    is_manual: true
+  is_running: false
 magic_regex:
   $TV:
     pattern: .*?([Ss]\d{1,2})?(?:[第EePpXx\.\-\_\( ]{1,2}|^)(\d{1,3})(?!\d).*?\.(mp4|mkv)

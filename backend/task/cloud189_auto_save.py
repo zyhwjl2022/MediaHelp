@@ -56,8 +56,10 @@ class Cloud189AutoSave:
       
            # 魔法正则转换
       pattern, replace = mr.magic_regex_conv(
-          self.params.get("pattern", "$TV_PRO"), self.params.get("replace", "")
+          self.params.get("pattern", ""), self.params.get("replace", "")
       )
+      logger.info(f"pattern: {pattern}")
+      logger.info(f"replace: {replace}")
       # 文件夹对比 创建文件夹
       dir_name_list = [dir_file["name"] for dir_file in target_folders]
       for folder in folders:
@@ -92,6 +94,11 @@ class Cloud189AutoSave:
                 ) and should_save):
           # 替换后的文件名
           file_name_re = mr.sub(pattern, replace, file["name"])
+          logger.info(f"file_name_re: {file_name_re}{ mr.is_exists(
+              file_name_re,
+              dir_name_list,
+              self.params.get("ignore_extension"),
+          )}")
           # 判断替换后的文件名是否存在
           if not mr.is_exists(
               file_name_re,
