@@ -83,10 +83,7 @@ const onOk = () => {
     if (props.cloudType === 'quark') {
       emit('okShareQuark', lastShareUrl);
     } else if (props.cloudType === 'tianyiyun') {
-      emit(
-        'okShareTianyiyun',
-        paths.value[paths.value.length - 1]?.fid ?? '-11',
-      );
+      emit('okShareTianyiyun', paths.value[paths.value.length - 1]?.fid ?? '');
     }
   } else {
     if (props.cloudType === 'quark') {

@@ -44,6 +44,9 @@ const formRef = ref<any>(null);
 watch(
   () => props.task,
   (newVal) => {
+    getCornTaskTypeListApi().then((_res) => {
+      taskTypeList.value = _res || [];
+    });
     const task = newVal;
     cloudType.value = getCloudTypeByTask(task.task);
     currentTask.value.task = task.task;
@@ -86,9 +89,6 @@ const updateWidth = () => {
 };
 
 onMounted(() => {
-  getCornTaskTypeListApi().then((_res) => {
-    taskTypeList.value = _res || [];
-  });
   updateWidth();
   window.addEventListener('resize', updateWidth);
 });
