@@ -99,6 +99,8 @@ class QuarkAutoSave:
         pattern, replace = mr.magic_regex_conv(
             self.params.get("pattern", ""), self.params.get("replace", "")
         )
+        logger.info(f"pattern: {pattern}")
+        logger.info(f"replace: {replace}")
         dir_name_list = [dir_file["file_name"] for dir_file in target_file_list]
         for share_file in files:
             search_pattern = (
@@ -209,7 +211,6 @@ class QuarkAutoSave:
           self.task = task
           self.params = task.get("params", {})
           self.task_name = task.get("name", "")
-          await emby_manager.emby_manager.searchAndRefreshItem(self.task_name)
           logger_service.info_sync(f"夸克网盘自动转存任务 开始🏃‍➡️: {self.task_name} ({self.task.get('task', '')})") 
           share_url = self.params.get("shareUrl")
           target_dir = self.params.get("targetDir", "/")

@@ -90,10 +90,7 @@ async def lifespan(app: FastAPI):
     # 启动前的操作
     try:
         # 清理日志文件
-        await cleanup_log_files()
-        logger.info("EMBY刷新媒体库")
-        logger.info(await emby_manager.refresh_library())
-        
+        await cleanup_log_files()        
         # 启动定时任务调度器
         scheduler_task = asyncio.create_task(task_scheduler.start())
         logger.info("应用程序启动，定时任务调度器已启动")

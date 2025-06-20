@@ -221,7 +221,7 @@ const onSelectFolderOkSelfTianyiyun = (fid: string) => {
 // 重名命规则
 const onSelectPattern: any = (value: string) => {
   currentTask.value.pattern = value;
-  currentTask.value.replace = value;
+  currentTask.value.replace = '';
 };
 // 保存文件规则
 const onAddRule = () => {

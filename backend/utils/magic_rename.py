@@ -3,6 +3,8 @@ import os
 from datetime import datetime
 from typing import Dict, List, Any
 
+from loguru import logger
+
 class MagicRename:
     """文件名魔法重命名工具"""
 
@@ -88,6 +90,8 @@ class MagicRename:
         :return: (pattern, replace) 元组
         """
         keyword = pattern
+        logger.info(f"keyword: {keyword}")
+        logger.info(f"self.magic_regex: {self.magic_regex[keyword]}")
         if keyword in self.magic_regex:
             pattern = self.magic_regex[keyword]["pattern"]
             if replace == "":

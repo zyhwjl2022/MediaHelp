@@ -10,7 +10,24 @@ class ScheduledManager:
     _instance = None
     _config: Dict[str, Any] = {}
     _default_config = {
-        "tasks": []
+        "magic_regex": {
+            "$TV": {
+                "pattern": r".*?([Ss]\d{1,2})?(?:[第EePpXx\.\-\_\( ]{1,2}|^)(\d{1,3})(?!\d).*?\.(mp4|mkv)",
+                "replace": r"\1E\2.\3"
+            },
+            "$BLACK_WORD": {
+                "pattern": r"^(?!.*纯享)(?!.*加更)(?!.*超前企划)(?!.*训练室)(?!.*蒸蒸日上).*",
+                "replace": ""
+            },
+            "$SHOW_PRO": {
+                "pattern": r"^(?!.*纯享)(?!.*加更)(?!.*抢先)(?!.*预告).*?第\d+期.*",
+                "replace": "{II}.{TASKNAME}.{DATE}.第{E}期{PART}.{EXT}"
+            },
+            "$TV_PRO": {
+                "pattern": "",
+                "replace": "{TASKNAME}.{SXX}E{E}.{EXT}" 
+            }
+        }
     }
 
     def __new__(cls):
@@ -47,7 +64,11 @@ class ScheduledManager:
         is_modified = False
         
         if not self._config:
-            self._config = self._default_config.copy()
+            self._config = {}
+            
+        # 检查并添加 magic_regex 配置
+        if "magic_regex" not in self._config:
+            self._config["magic_regex"] = self._default_config["magic_regex"]
             is_modified = True
 
         if is_modified:
