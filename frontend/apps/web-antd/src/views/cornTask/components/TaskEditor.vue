@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import {
   AutoComplete,
@@ -48,6 +48,7 @@ watch(
     cloudType.value = getCloudTypeByTask(task.task);
     currentTask.value.task = task.task;
     currentTask.value.name = task.name;
+    lastTaskName = task.name;
     const params = task?.params || {};
     currentTask.value.shareUrl = params.shareUrl;
     currentTask.value.targetDir = params.targetDir;
@@ -56,6 +57,9 @@ watch(
     currentTask.value.pattern = params.pattern;
     currentTask.value.replace = params.replace;
     currentTask.value.cron = task.cron ?? '0 19-23 * * *';
+    resourceList.value = [];
+    allResourceList.value = [];
+    cloudTypeList.value = [];
   },
 );
 
@@ -160,9 +164,16 @@ const onSelect: any = (_value: string, option: any) => {
   currentTask.value.shareUrl = option.cloudLinks?.[0];
   currentTask.value.name = option.keyword;
 };
+let lastTaskName = '';
 const handleNameChange: any = (value: string) => {
   if (!value) {
     resourceList.value = [];
+  }
+  if (props.task?.name) {
+    nextTick(() => {
+      currentTask.value.name = lastTaskName;
+      message.warning('编辑禁止修改任务名称');
+    });
   }
 };
 const onJump = (item: any) => {
@@ -235,6 +246,7 @@ const onOk = () => {
         sourceDir: currentTask.value.sourceDir,
         startMagic: res.startMagic,
         pattern: currentTask.value.pattern,
+        isShareUrlValid: true,
         replace: currentTask.value.replace,
       },
     };
@@ -270,6 +282,7 @@ const onOk = () => {
       >
         <Select
           v-model:value="currentTask.task"
+          :disabled="!!props.task?.name"
           placeholder="请选择任务类型"
           :options="taskTypeList"
         />

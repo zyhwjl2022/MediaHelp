@@ -156,10 +156,18 @@ const handleSwitchEvent = (row: any) => {
         </Button>
       </template>
       <template #enabled="{ row }">
-        <Switch :checked="row.enabled" @click="handleSwitchEvent(row)" />
-        <span :class="row.enabled ? 'text-green-500' : 'text-red-500'">{{
-          row.enabled ? ' 启用' : ' 禁用'
-        }}</span>
+        <span
+          v-if="row.params?.isShareUrlValid === false"
+          class="text-yellow-500"
+        >
+          分享链接失效
+        </span>
+        <div v-else>
+          <Switch :checked="row.enabled" @click="handleSwitchEvent(row)" />
+          <span :class="row.enabled ? 'text-green-500' : 'text-red-500'">{{
+            row.enabled ? ' 启用' : ' 禁用'
+          }}</span>
+        </div>
       </template>
       <template #action="{ row }">
         <Button type="link" @click="runTaskEvent(row)" success>
