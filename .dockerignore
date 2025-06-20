@@ -15,3 +15,8 @@ venv.bak/
 .gitignore
 .dockerignore
 *.log
+**/.venv/
+/backend/config/notify.yaml
+/backend/config/scheduled.yaml
+/backend/config/sys.yaml
+**/*.db

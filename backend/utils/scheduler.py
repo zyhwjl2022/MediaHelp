@@ -281,7 +281,7 @@ class TaskScheduler:
                 file_list_str = "\n".join(file_list)+"\n\n"
                 message += f"任务执行结果: {task_name}{task_type} 执行成功\n保存的文件:\n{file_list_str}"
         if message:
-            if await emby_manager.searchAndRefreshItem(task_name):
+            if await emby_manager.isEmbyManagerEnable() and await emby_manager.searchAndRefreshItem(task_name):
                 message += "\n🔄 EMBY刷新媒体库成功"
             notify_manager.send(title='📺MediaHelper 任务执行结果:', content=message)
 # 创建全局实例

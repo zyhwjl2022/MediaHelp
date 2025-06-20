@@ -180,7 +180,8 @@ class Cloud189AutoSave:
             logger_service.info_sync(f"天翼云盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 没有需要保存的文件")
           logger_service.info_sync(f"天翼云盘自动转存任务 结束🏁: {self.task_name} ({self.task.get('task', '')})")
           return {
-            "task_name": f'{self.task_name} ({self.task.get("task", "")})',
+            "task_name": f'{self.task_name}',
+            "task": self.task.get("task", ""),
             "need_save_files": [{"file_name": file["name"], "file_name_re": file.get("name_re")} for file in self.need_save_files_global]
           }
         except Exception as e:

@@ -17,6 +17,6 @@ logging:
   level: "INFO"
 
 security:
-  secret_key: "your-production-secret-key-please-change-it"  # 请在实际生产环境中修改为强密钥
+  secret_key: "j9x#K2P$mN8vL4qR7tY3wZ6hC9nB5gF1sA4dE8kM2pQ"  # 使用随机生成的强密钥
   algorithm: "HS256"
   access_token_expire_minutes: 30 

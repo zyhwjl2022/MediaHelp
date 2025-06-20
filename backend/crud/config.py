@@ -9,7 +9,7 @@ class Settings:
         self.config = self._load_config()
 
     def _load_config(self) -> Dict[str, Any]:
-        config_path = Path(__file__).parent.parent / "config" / f"config.{self.env}.yaml"
+        config_path = Path(__file__).parent.parent / f"config.{self.env}.yaml"
         if not config_path.exists():
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
         

@@ -12,13 +12,25 @@ class EmbyManager:
         self.base_url = config.get('emby_url')
         self.api_key = config.get('emby_api_key')
         
-        if not self.base_url or not self.api_key:
-            raise ValueError("Emby URL 和 API Key 必须在配置文件中提供")
-        
         self.headers = {
             'X-Emby-Token': self.api_key,
             'Content-Type': 'application/json'
         }
+    async def isEmbyManagerEnable(self) -> bool:
+        """检查 Emby 是否启用"""
+        if not self.base_url or not self.api_key:
+            logger.warning("Emby 未启用")
+            return False
+        try:
+            get_system_info = await self.get_system_info()
+            if get_system_info.get('Id'):
+                return True
+            else:
+                logger.warning("Emby 未启用")
+                return False
+        except Exception as e:
+            logger.error(f"检查 Emby 是否启用时出错: {str(e)}")
+            return False
 
     async def _make_request(self, endpoint: str, method: str = 'GET', params: dict = None, json: dict = None) -> dict:
         """发送请求到 Emby 服务器
@@ -267,8 +279,11 @@ class EmbyManager:
             'SearchTerm': search_term,
             'IncludeItemTypes': ','.join(include_item_types) if include_item_types else None,
             'Limit': str(limit),
+            'SortBy': 'SortName',
+            'StartIndex': '0',
             'Recursive': str(recursive).lower(),
-            'ImageTypeLimit': '1'
+            'ImageTypeLimit': '1',
+            "Fields": "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio"
         }
         
         # 移除 None 值的参数
@@ -331,9 +346,14 @@ class EmbyManager:
             bool: 是否刷新成功
         """
         try:
-            response = await self.search_items(search_term)            
+            logger.info(f"搜索关键词: {search_term}")
+            response = await self.search_items(search_term,['Series'])
+            logger.info(f"搜索结果: {response}")
             if not response.get('Items'):
                 logger.warning(f"未找到匹配的项目: {search_term}")
+                logger.info("未找到匹配的项目,刷新整个媒体库")
+                await self.refresh_library()
+                return True
                 
             # 获取第一个匹配项的ID
             item_id = response['Items'][0]['Id']
