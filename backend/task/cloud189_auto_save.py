@@ -94,11 +94,6 @@ class Cloud189AutoSave:
                 ) and should_save):
           # 替换后的文件名
           file_name_re = mr.sub(pattern, replace, file["name"])
-          logger.info(f"file_name_re: {file_name_re}{ mr.is_exists(
-              file_name_re,
-              dir_name_list,
-              self.params.get("ignore_extension"),
-          )}")
           # 判断替换后的文件名是否存在
           if not mr.is_exists(
               file_name_re,
