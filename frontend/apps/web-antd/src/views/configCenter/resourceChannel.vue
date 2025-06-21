@@ -35,12 +35,17 @@ const proxyConfig = ref<any>({});
 const gridOptions: VxeGridProps<RowType> = {
   columns: [
     { title: '序号', type: 'seq', width: 50 },
-    { editRender: { name: 'input' }, field: 'id', title: '频道ID', width: 100 },
+    {
+      editRender: { name: 'input' },
+      field: 'id',
+      title: '频道ID',
+      minWidth: 100,
+    },
     {
       editRender: { name: 'input' },
       field: 'name',
       title: '频道名称',
-      width: 100,
+      minWidth: 100,
     },
     {
       slots: { default: 'action' },
