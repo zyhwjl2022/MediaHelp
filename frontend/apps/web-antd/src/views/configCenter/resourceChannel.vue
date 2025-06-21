@@ -35,9 +35,19 @@ const proxyConfig = ref<any>({});
 const gridOptions: VxeGridProps<RowType> = {
   columns: [
     { title: '序号', type: 'seq', width: 50 },
-    { editRender: { name: 'input' }, field: 'id', title: '频道ID' },
-    { editRender: { name: 'input' }, field: 'name', title: '频道名称' },
-    { slots: { default: 'action' }, title: '操作', minWidth: 80 },
+    { editRender: { name: 'input' }, field: 'id', title: '频道ID', width: 100 },
+    {
+      editRender: { name: 'input' },
+      field: 'name',
+      title: '频道名称',
+      width: 100,
+    },
+    {
+      slots: { default: 'action' },
+      title: '操作',
+      minWidth: 200,
+      fixed: 'right',
+    },
   ],
   editConfig: {
     trigger: 'click',
@@ -98,6 +108,28 @@ onActivated(() => {
 const deleteRowEvent = (row: RowType) => {
   gridApi.grid.remove(row);
 };
+
+const upRowEvent = (row: RowType) => {
+  const { tableData } = gridApi.grid.getTableData();
+  const index = tableData.findIndex((item: RowType) => item.id === row.id);
+  if (index > 0) {
+    const temp = tableData[index - 1];
+    tableData[index - 1] = row;
+    tableData[index] = temp;
+    gridApi.grid.reloadData(tableData);
+  }
+};
+
+const downRowEvent = (row: RowType) => {
+  const { tableData } = gridApi.grid.getTableData();
+  const index = tableData.findIndex((item: RowType) => item.id === row.id);
+  if (index < tableData.length - 1) {
+    const temp = tableData[index + 1];
+    tableData[index + 1] = row;
+    tableData[index] = temp;
+    gridApi.grid.reloadData(tableData);
+  }
+};
 </script>
 
 <template>
@@ -121,6 +153,8 @@ const deleteRowEvent = (row: RowType) => {
         </Button>
       </template>
       <template #action="{ row }">
+        <Button type="link" @click="upRowEvent(row)">上移</Button>
+        <Button type="link" @click="downRowEvent(row)">下移</Button>
         <Button type="link" @click="deleteRowEvent(row)" danger>删除</Button>
       </template>
     </Grid>
