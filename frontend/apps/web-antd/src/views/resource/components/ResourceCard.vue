@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { ref } from 'vue';
 
 import { Button, message, Tag } from 'ant-design-vue';
 
@@ -10,45 +10,45 @@ const props = defineProps<{
   item: any;
 }>();
 const emit = defineEmits(['save']);
-const parsedItem = ref<any>({});
+// const parsedItem = ref<any>({});
 
-const parseResourceText = (text: string) => {
-  const result = {
-    name: '',
-    description: '',
-    size: '',
-    share: '',
-    link: '',
-    tags: [] as string[],
-  };
+// const parseResourceText = (text: string) => {
+//   const result = {
+//     name: '',
+//     description: '',
+//     size: '',
+//     share: '',
+//     link: '',
+//     tags: [] as string[],
+//   };
 
-  // 解析名称 - 支持方括号和书名号格式
-  const nameRegex = /^(?:名称：)?[「[]?([^」\]]+)[」\]]?/u;
-  const nameMatch = text.match(nameRegex);
-  if (nameMatch?.[1]) {
-    result.name = nameMatch[1].trim();
-  }
+//   // 解析名称 - 支持方括号和书名号格式
+//   const nameRegex = /^(?:名称：)?[「[]?([^」\]]+)[」\]]?/u;
+//   const nameMatch = text.match(nameRegex);
+//   if (nameMatch?.[1]) {
+//     result.name = nameMatch[1].trim();
+//   }
 
-  // 解析简介或描述
-  const descRegex =
-    /(?:简介|描述)：([\s\S]+?)(?=链接：|https:\/\/|🏷|标签：|大小：|📁)/u;
-  const descMatch = text.match(descRegex);
-  if (descMatch?.[1]) {
-    result.description = descMatch[1].trim();
-  }
-  return result;
-};
+//   // 解析简介或描述
+//   const descRegex =
+//     /(?:简介|描述)：([\s\S]+?)(?=链接：|https:\/\/|🏷|标签：|大小：|📁)/u;
+//   const descMatch = text.match(descRegex);
+//   if (descMatch?.[1]) {
+//     result.description = descMatch[1].trim();
+//   }
+//   return result;
+// };
 
-onMounted(() => {
-  parsedItem.value = parseResourceText(props.item.title);
-});
+// onMounted(() => {
+//   // parsedItem.value = parseResourceText(props.item.title);
+// });
 
-watch(
-  () => props.item,
-  (newVal) => {
-    parsedItem.value = parseResourceText(newVal.title);
-  },
-);
+// watch(
+//   () => props.item,
+//   (newVal) => {
+//     // parsedItem.value = parseResourceText(newVal.title);
+//   },
+// );
 
 const onJump = () => {
   window.open(props.item.cloudLinks?.[0], '_blank');
@@ -65,7 +65,7 @@ const onCreateTask = () => {
   if (shareUrl) {
     currentTask.value = {
       task: getTaskByUrl(shareUrl),
-      name: props.item.keyword,
+      name: props.item.keyword || props.item.title,
       params: {
         shareUrl,
       },
@@ -98,11 +98,15 @@ const onCreateTask = () => {
       </div>
       <div class="flex w-2/3 flex-col justify-between pl-4">
         <div>
-          <h3 class="mb-2 truncate text-lg font-bold" :alt="parsedItem.name">
-            {{ parsedItem.name }}
+          <h3 class="mb-2 truncate text-lg font-bold" :alt="item.title">
+            {{
+              item.title?.indexOf('名称') === -1
+                ? item.title
+                : item.title?.split('名称：')[1]
+            }}
           </h3>
           <p class="mb-2 line-clamp-3 text-gray-600">
-            {{ parsedItem.description }}
+            {{ item.content }}
           </p>
         </div>
         <div class="text-sm text-gray-500">

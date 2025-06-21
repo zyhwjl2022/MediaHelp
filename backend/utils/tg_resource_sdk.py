@@ -104,9 +104,17 @@ class TGResourceSDK:
                 # 获取消息文本
                 text_element = message.select_one(".js-message_text")
                 if text_element:
-                    text_parts = text_element.get_text().split("\n", 1)
-                    title = text_parts[0].strip()
-                    content = text_parts[1].strip() if len(text_parts) > 1 else ""
+                    # 获取原始HTML内容
+                    html_content = str(text_element)
+                    
+                    # 提取标题 (第一个<br>标签前的内容)
+                    title_match = re.split("<br.*?>", html_content, 1)
+                    title = BeautifulSoup(title_match[0], 'html.parser').get_text().strip()
+                    
+                    # 提取描述 (第一个<a>标签前面的内容，不包含标题)
+                    content_html = html_content.replace(title_match[0], "", 1)
+                    content_parts = re.split("<a.*?>", content_html, 1)
+                    content = BeautifulSoup(content_parts[0], 'html.parser').get_text().replace("<br>", "").strip()
                 else:
                     title = ""
                     content = ""
@@ -191,7 +199,7 @@ class TGResourceSDK:
                         url += message_id_params
                 tasks.append(self._search_in_web(url))
             
-            # 等待所有搜索完成
+            # 等待所有搜索完成 
             try:
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 for i, result in enumerate(results):

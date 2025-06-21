@@ -68,7 +68,19 @@ class ScheduledManager:
             
         # 检查并添加 magic_regex 配置
         if "magic_regex" not in self._config:
-            self._config["magic_regex"] = self._default_config["magic_regex"]
+            # 从YAML文件中读取magic_regex配置
+            try:
+                with open(self._config_file, 'r', encoding='utf-8') as f:
+                    yaml_config = yaml.safe_load(f) or {}
+                    if "magic_regex" in yaml_config:
+                        self._config["magic_regex"] = yaml_config["magic_regex"]
+                    else:
+                        # 如果YAML文件中没有magic_regex配置，则使用默认配置
+                        self._config["magic_regex"] = self._default_config["magic_regex"]
+            except Exception as e:
+                logger.error(f"读取YAML文件中的magic_regex配置失败: {e}")
+                # 读取失败时使用默认配置
+                self._config["magic_regex"] = self._default_config["magic_regex"]
             is_modified = True
 
         if is_modified:

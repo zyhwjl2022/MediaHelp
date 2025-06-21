@@ -56,5 +56,6 @@ COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 80
+ENV TZ=Asia/Shanghai
 
 CMD ["/start.sh"]

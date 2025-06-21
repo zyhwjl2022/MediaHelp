@@ -12,14 +12,14 @@ tasks:
       value: 175
     pattern: $TV_PRO
     isShareUrlValid: true
-    replace: {TASKNAME}.S01E{E}.{EXT}
+    replace: '{TASKNAME}.S01E{E}.{EXT}'
   enabled: true
   next_run: '2025-06-25T19:00:00'
   last_execution:
     success: true
-    message: 任务手动执行完成
-    execution_time: '2025-06-20T10:29:32.913769'
-    is_manual: true
+    message: 任务自动执行完成
+    execution_time: '2025-06-21T21:19:25.229662'
+    is_manual: false
   is_running: false
 magic_regex:
   $TV:
