@@ -135,6 +135,9 @@ class TaskScheduler:
 
     async def _check_and_execute_tasks(self):
         """检查并执行到期的任务"""
+        # 缓存每个任务的next_run时间，避免每次都重新计算
+        task_next_runs = {}
+        
         while self._running:
             try:
                 # 获取所有启用的任务
@@ -147,21 +150,32 @@ class TaskScheduler:
                     if not task_name:
                         continue
 
-                    # 获取任务的下次执行时间
-                    next_run = scheduled_manager.get_next_run_time(task)
-                    if not next_run:
-                        continue
+                    # 获取或缓存任务的下次执行时间
+                    if task_name not in task_next_runs:
+                        next_run = scheduled_manager.get_next_run_time(task)
+                        if next_run:
+                            task_next_runs[task_name] = next_run
+                        else:
+                            continue
+                    else:
+                        next_run = task_next_runs[task_name]
 
                     # 检查是否需要执行
                     last_run = self._last_run_times.get(task_name)
+                    logger.info(f"last_run: {last_run}, next_run: {next_run}, current_time: {current_time} flag:{(next_run <= current_time and last_run < next_run)}")
                     if not last_run or (next_run <= current_time and last_run < next_run):
                         # 执行任务并获取结果
                         result = await self._execute_task(task)
                         if result:
                             task_run_result.append(result)
+                        
+                        # 任务执行后，重新计算下次运行时间
+                        new_next_run = scheduled_manager.get_next_run_time(task)
+                        if new_next_run:
+                            task_next_runs[task_name] = new_next_run
 
                 # 打印任务执行结果
-                logger.info(f"任务执行结果: {task_run_result}")
+                logger.info(f"任务执行结果: {task_run_result} {task_next_runs}")
                 if task_run_result:
                     await self.task_done_notify_refresh_emby(task_run_result)
                 # 清理已删除任务的执行记录
@@ -169,6 +183,7 @@ class TaskScheduler:
                 removed_tasks = set(self._last_run_times.keys()) - task_names
                 for task_name in removed_tasks:
                     self._last_run_times.pop(task_name, None)
+                    task_next_runs.pop(task_name, None)  # 同时清理缓存
 
                 # 每分钟检查一次
                 await asyncio.sleep(60)

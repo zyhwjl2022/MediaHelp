@@ -1,7 +1,7 @@
 tasks:
 - task: cloud189_auto_save
   name: 吞噬星空
-  cron: 0 19 * * 3,4
+  cron: 30 20 * * *
   params:
     shareUrl: https://cloud.189.cn/t/nUfyIvuEZR7v
     targetDir: '623841196594583388'
@@ -14,11 +14,11 @@ tasks:
     isShareUrlValid: true
     replace: '{TASKNAME}.S01E{E}.{EXT}'
   enabled: true
-  next_run: '2025-06-25T19:00:00'
+  next_run: '2025-06-23T20:30:00'
   last_execution:
     success: true
     message: 任务自动执行完成
-    execution_time: '2025-06-21T21:19:25.229662'
+    execution_time: '2025-06-22T20:30:39.620260'
     is_manual: false
   is_running: false
 magic_regex:

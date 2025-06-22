@@ -250,7 +250,7 @@ const onOk = () => {
         replace: currentTask.value.replace,
       },
     };
-    const methods = props.task?.corn ? updateCornTaskApi : createCornTaskApi;
+    const methods = props.task?.cron ? updateCornTaskApi : createCornTaskApi;
     methods(params).then(() => {
       message.success('保存成功');
       emit('success');
@@ -321,7 +321,6 @@ const onOk = () => {
         <Input.Group compact>
           <Input
             v-model:value="currentTask.shareUrl"
-            :disabled="!!props.task?.name"
             style="width: calc(100% - 88px)"
             @change="onShareUrlChange"
           />
