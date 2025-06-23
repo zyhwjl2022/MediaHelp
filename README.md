@@ -61,7 +61,7 @@ docker run -d \
 2. 扫描下方二维码进行打赏支持
 
 <div align="center">
-    <img src="wiki/img/5629a724-a64f-414f-b77e-36e6e93f6ca2.png" alt="打赏二维码" width="200"/>
+    <img src="wiki/img/bea32a55-6743-468a-9193-10d52b068729.png" alt="打赏二维码" width="200"/>
 </div>
 
 ## 📝 免责声明
