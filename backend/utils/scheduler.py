@@ -269,6 +269,7 @@ class TaskScheduler:
 
     async def task_done_notify_refresh_emby(self, task_run_result: List[Dict[str, Any]]):
         message = ""
+        need_flush_emby = []
         # 安全处理任务结果
         for result in task_run_result:
             if not isinstance(result, dict):
@@ -295,9 +296,14 @@ class TaskScheduler:
             if file_list:
                 file_list_str = "\n".join(file_list)+"\n\n"
                 message += f"任务执行结果: {task_name}{task_type} 执行成功\n保存的文件:\n{file_list_str}"
+                need_flush_emby.append(task_name)
         if message:
-            if await emby_manager.isEmbyManagerEnable() and await emby_manager.searchAndRefreshItem(task_name):
-                message += "\n🔄 EMBY刷新媒体库成功"
+            if await emby_manager.isEmbyManagerEnable():
+                flag = []
+                for task_name in need_flush_emby:
+                    flag.append(await emby_manager.searchAndRefreshItem(task_name))
+            if all(flag):
+                 message += "\n🔄 EMBY刷新媒体库成功"
             notify_manager.send(title='📺MediaHelper 任务执行结果:', content=message)
 # 创建全局实例
 task_scheduler = TaskScheduler() 
