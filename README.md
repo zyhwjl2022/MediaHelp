@@ -7,8 +7,7 @@
     
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://hub.docker.com/r/rongyunmu/mediahelp)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/features/pull-request)
-[![GitHub stars](https://img.shields.io/github/stars/your-username/MediaHelper?style=social)](https://github.com/your-username/MediaHelper)
+[![GitHub stars](https://img.shields.io/github/stars/your-username/MediaHelper?style=social)](https://github.com/JieWSOFT/MediaHelper)
     
 </div>
 
