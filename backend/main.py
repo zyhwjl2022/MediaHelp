@@ -18,6 +18,7 @@ from utils.scheduler import task_scheduler
 from utils.logger_service import logger_service
 import asyncio
 from contextlib import asynccontextmanager
+from utils.auth_middleware import AuthCodeMiddleware
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     if route.tags:
@@ -132,6 +133,22 @@ def init_app():
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+    
+    # 添加授权码中间件
+    app.add_middleware(
+        AuthCodeMiddleware,
+        protected_paths=[
+            "/api/v1/emby",  # 保护 emby 相关接口
+            "/api/v1/cloud189",  # 保护网盘相关接口
+            "/api/v1/scheduled",  # 保护定时任务相关接口
+        ],
+        excluded_paths=[
+            "/api/v1/auth",  # 排除认证相关接口
+            "/docs",  # 排除 Swagger 文档
+            "/redoc",  # 排除 ReDoc 文档
+            "/openapi.json",  # 排除 OpenAPI schema
+        ]
     )
     
     # 注册异常处理器

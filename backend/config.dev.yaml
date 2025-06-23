@@ -19,4 +19,5 @@ logging:
 security:
   secret_key: "your-super-secret-key-please-change-in-production"
   algorithm: "HS256"
-  access_token_expire_minutes: 30 
+  access_token_expire_minutes: 30
+  auth_code: ""  # 在生产环境中通过环境变量设置 
