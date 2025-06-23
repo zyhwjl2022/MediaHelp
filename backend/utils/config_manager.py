@@ -75,8 +75,6 @@ class ConfigManager:
         else:
             self._config = {}
             
-        logger.info(f"config: {self._config}")
-
         # 使用默认配置补充缺失的配置项
         self._ensure_default_config()
 
