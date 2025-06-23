@@ -17,14 +17,18 @@ class Cloud189AutoSave:
       sys_config = config_manager.config_manager.get_config()
       username = sys_config.get("tianyiAccount", "")
       password = sys_config.get("tianyiPassword", "")
-        
-      if not username or not password:
-        logger.error("未配置天翼云盘账号，请在系统配置中添加 tianyiAccount 和 tianyiPassword")
+      sson_cookie = sys_config.get("tianyiCookie", "")
+
+      logger.info(f"username: {username} password: {password} sson_cookie: {sson_cookie}")
+
+      if (not username or not password) and not sson_cookie:
+        logger.error("未配置天翼云盘账号，请在系统配置中添加 tianyiAccount 和 tianyiPassword 或 tianyiCookie")
         return
-      
+  
       self.client = Cloud189Client(
-        username=username,
-        password=password
+          username=username,
+          password=password,
+          sson_cookie=sson_cookie
       )
       
     async def dir_check_and_save(self, share_info, file_id = '', target_file_id = ''):

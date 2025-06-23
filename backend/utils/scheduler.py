@@ -162,7 +162,7 @@ class TaskScheduler:
 
                     # 检查是否需要执行
                     last_run = self._last_run_times.get(task_name)
-                    logger.info(f"last_run: {last_run}, next_run: {next_run}, current_time: {current_time} flag:{(next_run <= current_time and last_run < next_run)}")
+                    # logger.info(f"last_run: {last_run}, next_run: {next_run}, current_time: {current_time} flag:{(next_run <= current_time and last_run < next_run)}")
                     if not last_run or (next_run <= current_time and last_run < next_run):
                         # 执行任务并获取结果
                         result = await self._execute_task(task)

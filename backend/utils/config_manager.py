@@ -17,6 +17,7 @@ class ConfigManager:
         # 天翼云盘配置
         "tianyiAccount": "",  # 天翼云盘账号
         "tianyiPassword": "",  # 天翼云盘密码
+        "tianyiCookie": "",  # 天翼云盘cookie
         "cloud189_session": {  # 天翼云盘session信息
             "access_token": "",
             "session_key": "",
@@ -73,6 +74,8 @@ class ConfigManager:
                 self._config = {}
         else:
             self._config = {}
+            
+        logger.info(f"config: {self._config}")
 
         # 使用默认配置补充缺失的配置项
         self._ensure_default_config()

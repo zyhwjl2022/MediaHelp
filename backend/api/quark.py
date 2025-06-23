@@ -48,7 +48,7 @@ async def get_quark_helper(user: User = Depends(get_current_user)) -> Tuple[Opti
     :return: (helper, error_response) 元组，如果成功返回 (helper, None)，如果失败返回 (None, error_response)
     """
     try:
-        if user.id not in quark_helpers:
+        if user.id not in quark_helpers or quark_helpers[user.id] is None:
             # 从系统配置中获取 cookie
             sys_config = config_manager.get_config()
             cookie = sys_config.get("quarkCookie", "")

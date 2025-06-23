@@ -169,7 +169,8 @@ class CloudAuthClient:
                 headers=headers,
             )
             login_result = json.loads(response)
-                    
+            logger.info(f"登录结果: {login_result}")
+            
             # 3. 获取会话信息
             return await self.get_session_for_pc(redirect_url=login_result["toUrl"])
             

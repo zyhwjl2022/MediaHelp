@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends
 from api.deps import get_current_user
+from loguru import logger
 from models.user import User
 from schemas.response import Response
 from schemas.sysSetting import SysSettingUpdate, TGChannel, TGResourceConfig, ProxyConfig
 from utils.config_manager import config_manager
 from typing import Dict, Any, List, Optional
+from api.quark import quark_helpers
 
 router = APIRouter(prefix="/sysSetting", tags=["系统设置"])
 
@@ -75,11 +77,22 @@ async def update_system_config(
     if config.alist_api_key is not None:
         new_config["alist_api_key"] = config.alist_api_key
     if config.tianyiAccount is not None:
+        new_config["cloud189_session"] = {}
+        new_config["cloud189_session"]['expires_in'] = 0
+        new_config["cloud189_session"]['session_key'] = ''
+        new_config["cloud189_session"]['access_token'] = ''
         new_config["tianyiAccount"] = config.tianyiAccount
     if config.tianyiPassword is not None:
+        new_config["cloud189_session"] = {}
+        new_config["cloud189_session"]['expires_in'] = 0
+        new_config["cloud189_session"]['session_key'] = ''
+        new_config["cloud189_session"]['access_token'] = ''
         new_config["tianyiPassword"] = config.tianyiPassword
     if config.quarkCookie is not None:
         new_config["quarkCookie"] = config.quarkCookie
+        ## 更新夸克Helper 删除这个userId的helper
+        if current_user.id in quark_helpers:
+            del quark_helpers[current_user.id]
     if config.use_proxy is not None:
         new_config["use_proxy"] = config.use_proxy
     if config.proxy_host is not None:
@@ -91,6 +104,7 @@ async def update_system_config(
     if config.proxy_password is not None:
         new_config["proxy_password"] = config.proxy_password
         
+    logger.info(f"更新配置: {new_config}")
     config_manager.update_config(new_config)
     
     # 返回更新后的配置

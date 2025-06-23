@@ -90,11 +90,12 @@ class Cloud189Client:
                               for k, v in kwargs["params"].items()}
 
         # 添加sessionKey
-        if "params" in kwargs:
-            kwargs["params"]["sessionKey"] = self.session["session_key"]
-        else:
-            kwargs["params"] = {"sessionKey": self.session["session_key"]}
-            
+        if self.session:
+            if "params" in kwargs:
+                kwargs["params"]["sessionKey"] = self.session["session_key"]
+            else:
+                kwargs["params"] = {"sessionKey": self.session["session_key"]}
+                            
         # 添加noCache
         if "params" in kwargs:
             kwargs["params"]["noCache"] = str(random.random())

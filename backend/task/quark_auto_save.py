@@ -215,6 +215,12 @@ class QuarkAutoSave:
           share_url = self.params.get("shareUrl")
           target_dir = self.params.get("targetDir", "/")
           isShareUrlValid = self.params.get("isShareUrlValid", True)
+          
+          # 验证cookie 是否有效
+          if not await self.helper.init():
+            logger.error(f"任务 [{self.task_name}] 夸克网盘初始化失败，请检查 cookie 是否有效")
+            logger_service.error_sync(f"任务 [{self.task_name}] 夸克网盘初始化失败，请检查 cookie 是否有效")
+            return
           if not isShareUrlValid:
               logger.error(f"任务 [{self.task_name}] 分享链接无效: {share_url} 跳过执行")
               return

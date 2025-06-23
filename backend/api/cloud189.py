@@ -71,17 +71,19 @@ class DeleteFilesRequest(BaseModel):
     file_ids: List[Dict[str, Any]]
 
 # 客户端缓存
-_client_cache: Optional[Cloud189Client] = None
+client_cache: Optional[Cloud189Client] = None
 
 async def get_client() -> Cloud189Client:
     """获取客户端实例"""
-    global _client_cache
-    
-    if not _client_cache:
+    global client_cache
+    logger.info(f"client_cache: {client_cache}")
+    if not client_cache:
         # 从系统配置中获取账号信息
         sys_config = config_manager.get_config()
         username = sys_config.get("tianyiAccount", "")
         password = sys_config.get("tianyiPassword", "")
+        sson_cookie = sys_config.get("tianyiCookie", "")
+        logger.warning(f"获取客户端实例: {username} {password} {sson_cookie}")
         
         if not username or not password:
             raise HTTPException(
@@ -89,14 +91,15 @@ async def get_client() -> Cloud189Client:
                 detail="未配置天翼云盘账号，请在系统配置中添加 tianyiAccount 和 tianyiPassword"
             )
             
-        _client_cache = Cloud189Client(
+        client_cache = Cloud189Client(
             username=username,
-            password=password
+            password=password,
+            sson_cookie=sson_cookie
         )
-        if not await _client_cache.login():
+        if not await client_cache.login():
             raise HTTPException(status_code=500, detail="天翼云盘登录失败")
             
-    return _client_cache
+    return client_cache
 
 @router.post("/init")
 async def init_client(
@@ -122,8 +125,8 @@ async def init_client(
         if not await client.login():
             raise HTTPException(status_code=4001, detail="登录失败")
             
-        global _client_cache
-        _client_cache = client
+        global client_cache
+        client_cache = client
         
         return {"message": "初始化成功", "user_info": client.user_info}
     except Cloud189Error as e:
