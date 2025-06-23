@@ -103,6 +103,23 @@ docker run -d \
 所有配置文件都在挂载的配置目录中，定期备份该目录即可
 </details>
 
+## 👥 社区交流
+
+<div align="center">
+    <p>欢迎加入我们充满活力的社区！在这里，你可以：</p>
+    <ul align="left" style="display: inline-block;">
+        <li>分享使用经验和技巧</li>
+        <li>获取最新项目动态</li>
+        <li>寻求技术支持和帮助</li>
+        <li>参与功能讨论和建议</li>
+    </ul>
+    <p>
+        <a href="https://t.me/+xA5fFxBUQIg1YjE1">
+            <img src="https://img.shields.io/badge/Telegram-MediaHelper社区-blue?logo=telegram" alt="Telegram Group">
+        </a>
+    </p>
+</div>
+
 ## 🤝 支持项目
 
 如果您觉得这个项目对您有帮助，可以通过以下方式支持我们：
