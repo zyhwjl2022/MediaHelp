@@ -2,7 +2,7 @@
 
 <div align="center">
     <img src="/frontend/apps/web-antd/public/icon.png" alt="MediaHelper Logo" width="200" height="150" />
-    <h1>MediaHelper</h1>
+    <h1>MediaHelp</h1>
     <p>🎬 一站式媒体资源管理助手</p>
     
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -13,7 +13,7 @@
 
 ## 📖 简介
 
-MediaHelper 是一个强大的媒体资源管理工具，支持多个主流网盘的资源转存和管理功能。它能帮助你更高效地管理和组织你的媒体资源，是您的私人媒体管理助手。
+MediaHelp 是一个强大的媒体资源管理工具，支持多个主流网盘的资源转存和管理功能。它能帮助你更高效地管理和组织你的媒体资源，是您的私人媒体管理助手。
 
 ## ✨ 核心特性
 
