@@ -116,19 +116,23 @@ class MagicRename:
                 match = re.search(p, file_name)
                 if match:
                     # 提取数字
-                    number_str = re.search(r'\d+', match.group())
+                    match = match.group()
+                    number_str = re.search(r'\d+', match)
                     if number_str:
                         number = int(number_str.group())
                         if start_magic["symbol"] == ">":
                             if number > start_magic["value"]:
                                 flag[i] = True
+                                break
                         elif start_magic["symbol"] == "<":
                             if number < start_magic["value"]:
                                 flag[i] = True
+                                break
                         elif start_magic["symbol"] == "=":
                             if number == start_magic["value"]:
                                 flag[i] = True
-                                
+                                break
+                    break
         return all(flag)
 
     def sub(self, pattern: str, replace: str, file_name: str) -> str:
