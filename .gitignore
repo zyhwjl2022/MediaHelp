@@ -67,5 +67,6 @@ vite.config.ts.*
 .dockerfile
 start.sh
 scheduled.yaml
+backend/temp/
 sys.yaml
 notify.yaml
