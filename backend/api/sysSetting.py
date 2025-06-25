@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File
 from api.deps import get_current_user
 from loguru import logger
 from models.user import User
@@ -7,6 +7,12 @@ from schemas.sysSetting import SysSettingUpdate, TGChannel, TGResourceConfig, Pr
 from utils.config_manager import config_manager
 from typing import Dict, Any, List, Optional
 from api.quark import quark_helpers
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+import json
+from datetime import datetime
+import os
+from pathlib import Path
+import io
 
 router = APIRouter(prefix="/sysSetting", tags=["系统设置"])
 
@@ -242,6 +248,107 @@ async def update_tg_resource_config(
     
     config_manager.update_config({"tg_resource": tg_config})
     return Response(message="TG资源配置更新成功")
+
+@router.get("/tg-resource/channels/export")
+async def export_tg_channels(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    导出TG频道列表
+    """
+    config = config_manager.get_config()
+    tg_config = config.get("tg_resource", {})
+    channels = tg_config.get("telegram", {}).get("channels", [])
+    
+    # 准备导出数据
+    export_data = {
+        "channels": channels,
+        "exported_at": datetime.now().isoformat(),
+        "exported_by": current_user.username
+    }
+    
+    # 将数据转换为JSON字符串
+    json_data = json.dumps(export_data, ensure_ascii=False, indent=2)
+    
+    # 创建内存流
+    stream = io.BytesIO(json_data.encode('utf-8'))
+    
+    # 生成文件名
+    filename = f"tg_channels_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    
+    # 返回流式响应
+    return StreamingResponse(
+        stream,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
+
+@router.post("/tg-resource/channels/import", response_model=Response)
+async def import_tg_channels(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    从JSON文件导入TG频道配置
+    
+    参数：
+    - file: 上传的JSON配置文件
+    """
+    try:
+        # 读取上传的文件内容
+        content = await file.read()
+        channels_data = json.loads(content.decode())
+        
+        # 获取channels列表
+        channels = channels_data.get("channels", [])
+        if not channels:
+            return Response(
+                code=-1,
+                message="导入失败：未找到有效的频道配置"
+            )
+            
+        # 验证channels数据格式
+        for channel in channels:
+            if not all(key in channel for key in ["id", "name"]):
+                return Response(
+                    code=-1,
+                    message="导入失败：频道配置格式错误，必须包含id和name字段"
+                )
+            # 确保enable字段存在，默认为True
+            if "enable" not in channel:
+                channel["enable"] = True
+                
+        config = config_manager.get_config()
+        tg_config = config.get("tg_resource", {})
+        
+        # 更新channels配置
+        if "telegram" not in tg_config:
+            tg_config["telegram"] = {}
+        tg_config["telegram"]["channels"] = channels
+        
+        # 保存配置
+        config_manager.update_config({"tg_resource": tg_config})
+        
+        return Response(
+            message="频道配置导入成功",
+            data={"channels": channels}
+        )
+        
+    except json.JSONDecodeError:
+        return Response(
+            code=-1,
+            message="导入失败：文件格式错误，请上传有效的JSON文件"
+        )
+    except Exception as e:
+        logger.error(f"导入频道配置失败: {str(e)}")
+        return Response(
+            code=-1,
+            message=f"导入失败：{str(e)}"
+        )
+    finally:
+        await file.close()
 
 
 

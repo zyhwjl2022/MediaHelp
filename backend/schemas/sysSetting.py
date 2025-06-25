@@ -5,6 +5,7 @@ class TGChannel(BaseModel):
     """TG频道配置"""
     id: str = Field(..., description="频道ID")
     name: str = Field(..., description="频道名称")
+    enable: bool = Field(default=True, description="是否启用")
 
 class TGConfig(BaseModel):
     """TG配置"""
