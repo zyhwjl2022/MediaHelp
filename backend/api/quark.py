@@ -20,6 +20,7 @@ class SaveShareFilesRequest(BaseModel):
     share_url: str = Field(..., description="分享链接")
     stoken: str = Field(default="", description="分享token")
     target_dir: str = Field(default="0", description="目标文件夹ID")
+    keyword: str = Field(default="ikan", description="关键词，用于创建新文件夹")
     pdir_fid: str = Field(default="0", description="来源文件夹ID")
     file_ids: List[str] = Field(default=[], description="要保存的文件ID列表，为空则保存所有文件")
     file_tokens: List[str] = Field(default=[], description="要保存的文件token列表，需要与file_ids一一对应")
@@ -388,6 +389,10 @@ async def save_shared_files(
             request.file_ids = [f["fid"] for f in files]
             request.file_tokens = [f.get("share_fid_token", "") for f in files]
             
+        # 创建根文件夹
+        logger.info(f"创建文件夹: {request.keyword} 在 {request.target_dir}")
+        request.target_dir = await helper.create_dir(request.keyword, request.target_dir)
+
         # 保存文件
         save_response = await helper.sdk.save_share_files(
             share_info["share_id"],

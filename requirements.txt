@@ -1,0 +1,15 @@
+uvicorn
+fastapi
+loguru
+SQLAlchemy
+pydantic[email]
+python-jose
+passlib
+aiosqlite
+aiohttp
+croniter
+pyyaml
+bcrypt
+requests
+beautifulsoup4
+pycryptodome

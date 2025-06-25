@@ -219,6 +219,7 @@ const saveShareFile = async () => {
       target_dir,
       pdir_fid,
       stoken: stoken.value,
+      keyword: props.item.keyword,
     });
   } else if (props.item?.cloudType === 'tianyiyun') {
     const target_folder_id =

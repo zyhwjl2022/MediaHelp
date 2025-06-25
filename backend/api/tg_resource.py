@@ -64,81 +64,80 @@ def organize_search_results(results: Any) -> List[Dict]:
             
         # 按频道ID分组
         channel_groups = {}
-        
+
+        resultList = []
         for result in results:
             if not isinstance(result, dict):
                 continue
-                
-            # 获取频道信息
-            channel_info = result.get("channelInfo", {})
-            channel_id = channel_info.get("id")
-            if not channel_id:
-                continue
-                
-            channel_name = channel_info.get("name", "")
-            channel_logo = channel_info.get("channelLogo", "")
-            
-            # 处理频道logo
-            if channel_logo:
-                channel_logo = process_image_url(channel_logo)
-                
-            # 创建或获取频道组
-            if channel_id not in channel_groups:
-                channel_groups[channel_id] = {
-                    "list": [],
-                    "channelInfo": {
-                        "id": channel_id,
-                        "name": channel_name,
-                        "channelLogo": channel_logo
-                    },
-                    "id": channel_id
-                }
-                
-            # 处理资源列表
             resource_list = result.get("list", [])
             if not isinstance(resource_list, list):
                 continue
-                
-            for resource in resource_list:
-                try:
-                    # 处理图片URL
-                    image_url = resource.get("image", "")
-                    if image_url:
-                        image_url = process_image_url(image_url)
-                        
-                    # 处理云盘链接
-                    cloud_links = resource.get("cloudLinks") or resource.get("cloud_links") or []
-                    if isinstance(cloud_links, str):
-                        cloud_links = [cloud_links]
-                        
-                    # 处理标签
-                    tags = resource.get("tags") or []
-                    if isinstance(tags, str):
-                        tags = [tag.strip() for tag in tags.split("#") if tag.strip()]
-                        tags = [f"#{tag}" for tag in tags]
-                        
-                    # 构建标准化的结果项
-                    item = {
-                        "messageId": str(resource.get("messageId") or resource.get("message_id", "")),
-                        "title": resource.get("title", ""),
-                        "completeTitle": None,
-                        "link": None,
-                        "pubDate": resource.get("pubDate") or resource.get("pub_date") or datetime.now().isoformat(),
-                        "content": resource.get("content") or resource.get("description", ""),
-                        "description": None,
-                        "image": image_url,
-                        "cloudLinks": cloud_links,
-                        "tags": tags,
-                        "cloudType": resource.get("cloudType") or resource.get("cloud_type", ""),
-                        "channel": channel_name,
-                        "channelId": channel_id
-                    }
+            resultList.extend(resource_list)
+        
+
+        # 对结果按发布时间排序
+        # resultList.sort(key=lambda x: datetime.fromisoformat(x['pubDate'].replace('：', ':')))
+        resultList.sort(key=lambda x: datetime.fromisoformat(x['pubDate'].replace('：', ':')), reverse=True)
+        
+        logger.info(f"处理结果：{resultList}")
+
+        # 创建或获取频道组  
+        channel_id = "zyhwjl"
+        channel_name = "zyhwjl"
+        channel_logo = "https://cdn-telegram.org/zyhwjl/logo.png"
+        if channel_id not in channel_groups:
+            channel_groups[channel_id] = {
+                "list": [],
+                "channelInfo": {
+                    "id": channel_id,
+                    "name": channel_name,
+                    "channelLogo": channel_logo
+                },
+                "id": channel_id
+            }
+
+        if "list" not in channel_groups[channel_id]:
+            channel_groups[channel_id]["list"] = []  # 先创建空列表
+        for resource in resultList:
+            try:
+                # 处理图片URL
+                image_url = resource.get("image", "")
+                if image_url:
+                    image_url = process_image_url(image_url)
                     
+                # 处理云盘链接
+                cloud_links = resource.get("cloudLinks") or resource.get("cloud_links") or []
+                if isinstance(cloud_links, str):
+                    cloud_links = [cloud_links]
+                    
+                # 处理标签
+                tags = resource.get("tags") or []
+                if isinstance(tags, str):
+                    tags = [tag.strip() for tag in tags.split("#") if tag.strip()]
+                    tags = [f"#{tag}" for tag in tags]
+                    
+                # 构建标准化的结果项
+                item = {
+                    "messageId": str(resource.get("messageId") or resource.get("message_id", "")),
+                    "title": resource.get("title", ""),
+                    "completeTitle": None,
+                    "link": None,
+                    "pubDate": resource.get("pubDate") or resource.get("pub_date") or datetime.now().isoformat(),
+                    "content": resource.get("content") or resource.get("description", ""),
+                    "description": None,
+                    "image": image_url,
+                    "cloudLinks": cloud_links,
+                    "tags": tags,
+                    "cloudType": resource.get("cloudType") or resource.get("cloud_type", ""),
+                }
+
+                if(item["cloudType"] != "baidu"):
                     channel_groups[channel_id]["list"].append(item)
-                    
-                except Exception as e:
-                    logger.error(f"处理资源项时出错: {str(e)}")
-                    continue
+                # channel_groups["list"].append(item)
+                
+            except Exception as e:
+                logger.error(f"处理资源项时出错: {str(e)}")
+                continue
                 
         return list(channel_groups.values())
         
