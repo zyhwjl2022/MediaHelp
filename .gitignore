@@ -68,3 +68,4 @@ vite.config.ts.*
 start.sh
 scheduled.yaml
 sys.yaml
+notify.yaml
