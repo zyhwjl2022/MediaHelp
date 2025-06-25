@@ -62,3 +62,28 @@ export async function getProxyConfigApi(params: any) {
 export async function updateProxyConfigApi(data: any) {
   return requestClient.put('/sysSetting/proxy/config', data);
 }
+
+/**
+ * 导出资源频道设置
+ */
+export async function exportResourceChannelConfigApi() {
+  return requestClient
+    .download('/sysSetting/tg-resource/channels/export', {
+      responseType: 'blob',
+    })
+    .then((res) => {
+      const blob = new Blob([res], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'resource_channel_config.json';
+      a.click();
+    });
+}
+
+/**
+ * 导入资源频道设置
+ */
+export async function importResourceChannelConfigApi(data: any) {
+  return requestClient.upload('/sysSetting/tg-resource/channels/import', data);
+}

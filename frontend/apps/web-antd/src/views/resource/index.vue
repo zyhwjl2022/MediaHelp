@@ -2,7 +2,7 @@
 import { nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { Button, Form, FormItem, Input, Select } from 'ant-design-vue';
+import { Button, Empty, Form, FormItem, Input, Select } from 'ant-design-vue';
 
 import YunpanSave from '#/views/components/yunpanSave/index.vue';
 
@@ -80,7 +80,7 @@ onActivated(() => {
 </script>
 
 <template>
-  <div v-loading="loading" class="min-h-[100vh]">
+  <div v-loading="loading" class="min-h-[100vh-100px]">
     <Form layout="inline" class="m-4">
       <FormItem label="关键词" name="keyword">
         <Input v-model:value="keyword" @keyup.enter="loadResource(keyword)" />
@@ -99,9 +99,16 @@ onActivated(() => {
       </FormItem>
     </Form>
     <div
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      class="grid min-h-[calc(100vh-200px)] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
     >
+      <div
+        v-if="resourceList.length === 0"
+        class="col-span-full flex h-full items-center justify-center"
+      >
+        <Empty description="暂无资源" />
+      </div>
       <ResourceCard
+        v-else
         v-for="item in resourceList"
         :key="item.id"
         :item="item"

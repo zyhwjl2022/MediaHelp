@@ -179,9 +179,9 @@ class TGResourceSDK:
             
             # 过滤频道列表
             channel_list = (
-                [c for c in config["telegram"]["channels"] if c["id"] == channel_id]
+                [c for c in config["telegram"]["channels"] if c["id"] == channel_id and c.get("enable", True)]
                 if channel_id
-                else config["telegram"]["channels"]
+                else [c for c in config["telegram"]["channels"] if c.get("enable", True)]
             )
             
             # 并行搜索所有频道

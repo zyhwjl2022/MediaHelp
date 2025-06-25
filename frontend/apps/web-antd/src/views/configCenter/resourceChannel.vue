@@ -12,13 +12,16 @@ import {
   Input,
   message,
   Switch,
+  Upload,
 } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 
 import {
+  exportResourceChannelConfigApi,
   getProxyConfigApi,
   getResourceChannelConfigApi,
+  importResourceChannelConfigApi,
   updateProxyConfigApi,
   updateResourceChannelConfigApi,
 } from './api';
@@ -31,6 +34,7 @@ interface RowType {
   productName: string;
   releaseDate: string;
 }
+const loading = ref(false);
 const proxyConfig = ref<any>({});
 const gridOptions: VxeGridProps<RowType> = {
   columns: [
@@ -46,6 +50,14 @@ const gridOptions: VxeGridProps<RowType> = {
       field: 'name',
       title: '频道名称',
       minWidth: 100,
+    },
+    {
+      field: 'enable',
+      title: '状态',
+      minWidth: 100,
+      slots: {
+        default: 'enable',
+      },
     },
     {
       slots: { default: 'action' },
@@ -67,7 +79,10 @@ const gridOptions: VxeGridProps<RowType> = {
       query: async () => {
         const { telegram } = await getResourceChannelConfigApi({});
         return {
-          items: telegram?.channels,
+          items: telegram?.channels.map((item: any) => ({
+            ...item,
+            enable: item.enable ?? true,
+          })),
         };
       },
     },
@@ -81,11 +96,13 @@ const addRowEvent = () => {
   gridApi.grid.insert({
     category: '',
     color: '',
+    enable: true,
   });
 };
 
 const saveConfigEvent = async () => {
   const data = gridApi.grid.getTableData();
+  loading.value = true;
   await Promise.all([
     updateResourceChannelConfigApi({
       channels: data.tableData,
@@ -95,7 +112,9 @@ const saveConfigEvent = async () => {
       proxy_host: proxyConfig.value.proxy_host,
       proxy_port: proxyConfig.value.proxy_port,
     }),
-  ]);
+  ]).finally(() => {
+    loading.value = false;
+  });
   message.success('保存成功');
 };
 
@@ -135,10 +154,34 @@ const downRowEvent = (row: RowType) => {
     gridApi.grid.reloadData(tableData);
   }
 };
+
+const handleSwitchEvent = (row: any) => {
+  const { tableData } = gridApi.grid.getTableData();
+  const index = tableData.findIndex((item: RowType) => item.id === row.id);
+  tableData[index].enable = !row.enable;
+  gridApi.grid.reloadData(tableData);
+};
+
+const exportConfigEvent = () => {
+  exportResourceChannelConfigApi();
+};
+
+const beforeUploadEvent = (file: any) => {
+  loading.value = true;
+  importResourceChannelConfigApi({ file })
+    .then(() => {
+      message.success('导入成功');
+      gridApi.reload();
+    })
+    .finally(() => {
+      loading.value = false;
+    });
+  return false;
+};
 </script>
 
 <template>
-  <div class="vp-raw w-full p-[20px]">
+  <div class="vp-raw w-full p-[20px]" v-loading="loading">
     <Divider>代理设置</Divider>
     <Form layout="inline">
       <FormItem label="是否启用代理" name="use_proxy" class="w-full pb-[10px]">
@@ -153,6 +196,16 @@ const downRowEvent = (row: RowType) => {
     </Form>
     <Grid class="mb-[20px] mt-[20px]">
       <template #toolbar-tools>
+        <Upload
+          class="mr-[10px]"
+          :show-upload-list="false"
+          :before-upload="beforeUploadEvent"
+        >
+          <Button type="primary" class="mr-[10px]">导入配置</Button>
+        </Upload>
+        <Button type="primary" @click="exportConfigEvent" class="mr-[10px]">
+          导出配置
+        </Button>
         <Button type="primary" @click="addRowEvent" class="mr-[10px]">
           新增
         </Button>
@@ -161,6 +214,14 @@ const downRowEvent = (row: RowType) => {
         <Button type="link" @click="upRowEvent(row)">上移</Button>
         <Button type="link" @click="downRowEvent(row)">下移</Button>
         <Button type="link" @click="deleteRowEvent(row)" danger>删除</Button>
+      </template>
+      <template #enable="{ row }">
+        <div>
+          <Switch :checked="row.enable" @click="handleSwitchEvent(row)" />
+          <span :class="row.enable ? 'text-green-500' : 'text-red-500'">{{
+            row.enable ? ' 启用' : ' 禁用'
+          }}</span>
+        </div>
       </template>
     </Grid>
     <Affix :offset-bottom="50">
