@@ -66,4 +66,5 @@ vite.config.ts.*
 .dockerignore
 .dockerfile
 start.sh
-
+scheduled.yaml
+sys.yaml
