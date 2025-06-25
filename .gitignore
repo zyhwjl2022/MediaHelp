@@ -63,4 +63,7 @@ vite.config.ts.*
 *.sln
 *.sw?
 .history
+.dockerignore
+.dockerfile
+start.sh
 
