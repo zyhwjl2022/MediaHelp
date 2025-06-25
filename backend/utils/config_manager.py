@@ -36,8 +36,8 @@ class ConfigManager:
             "telegram": {
                 "baseUrl": "https://t.me/s",
                 "channels": [
-                    {"id": "ailaoban", "name": "AI老班"},
-                    {"id": "ailiaoba", "name": "AI聊吧"}
+                    {"id": "ailaoban", "name": "AI老班", "enable": True},
+                    {"id": "ailiaoba", "name": "AI聊吧", "enable": True}
                 ]
             },
             "cloudPatterns": {

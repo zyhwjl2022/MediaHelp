@@ -3,7 +3,7 @@ import { nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { debouncedWatch } from '@vueuse/core';
 
-import { Button, Form, FormItem, Input, Select } from 'ant-design-vue';
+import { Button, Empty, Form, FormItem, Input, Select } from 'ant-design-vue';
 
 import YunpanSave from '#/views/components/yunpanSave/index.vue';
 
@@ -153,8 +153,8 @@ const loadResource = (searchKeyword: string | undefined) => {
 </script>
 
 <template>
-  <div v-loading="loading" class="min-h-[100vh]">
-    <Form layout="inline" class="m-4" @submit.prevent="loadResource(keyword)">
+  <div v-loading="loading" class="min-h-[100vh-100px]">
+    <Form layout="inline" class="m-4">
       <FormItem label="关键词" name="keyword">
         <Input 
           v-model:value="keyword" 
@@ -177,21 +177,17 @@ const loadResource = (searchKeyword: string | undefined) => {
         </Button>
       </FormItem>
     </Form>
-    
-    <!-- 空状态处理 -->
-    <div v-if="loading" class="flex justify-center items-center py-16">
-      <div class="ant-spin ant-spin-lg ant-spin-spinning">
-        <span class="ant-spin-dot ant-spin-dot-spin">
-          <i class="ant-spin-dot-item"></i>
-          <i class="ant-spin-dot-item"></i>
-          <i class="ant-spin-dot-item"></i>
-          <i class="ant-spin-dot-item"></i>
-        </span>
+    <div
+      class="grid min-h-[calc(100vh-200px)] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    >
+      <div
+        v-if="resourceList.length === 0"
+        class="col-span-full flex h-full items-center justify-center"
+      >
+        <Empty description="暂无资源" />
       </div>
-    </div>
-    
-    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 p-4">
       <ResourceCard
+        v-else
         v-for="item in resourceList"
         :key="item.id || item.name"
         :item="item"
