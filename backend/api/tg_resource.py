@@ -78,8 +78,6 @@ def organize_search_results(results: Any) -> List[Dict]:
         # 对结果按发布时间排序
         # resultList.sort(key=lambda x: datetime.fromisoformat(x['pubDate'].replace('：', ':')))
         resultList.sort(key=lambda x: datetime.fromisoformat(x['pubDate'].replace('：', ':')), reverse=True)
-        
-        logger.info(f"处理结果：{resultList}")
 
         # 创建或获取频道组  
         channel_id = "zyhwjl"

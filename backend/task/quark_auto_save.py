@@ -6,6 +6,10 @@ from loguru import logger
 from utils import config_manager, emby_manager, logger_service, scheduled_manager
 from utils.magic_rename import MagicRename
 from utils.quark_helper import QuarkHelper
+import sys
+sys.path.insert(0, sys.path[0]+"/../")
+from utils.tg_resource_sdk import tg_resource
+from api.tg_resource import organize_search_results
 
 class QuarkAutoSave:
     helper = None
@@ -77,7 +81,7 @@ class QuarkAutoSave:
         if not to_pdir_fid:
             logger.error(f"❌ 目录 {target_dir}{subdir_path} fid获取失败，跳过转存")
             return
-        logger.info(f"获取目标文件夹fid成功: {to_pdir_fid}")
+        # logger.info(f"获取目标文件夹fid成功: {to_pdir_fid}")
     
         # 获取目标文件夹中的文件列表，用于查重
         target_files = await self.helper.sdk.get_file_list(to_pdir_fid, recursive=True)
@@ -87,8 +91,8 @@ class QuarkAutoSave:
 
         target_file_list = target_files.get("data", {}).get("list", [])
 
-        logger.info(f"target_file_list: {len(target_file_list)}")
-        logger.info(f"files: {len(files)}")
+        # logger.info(f"target_file_list: {len(target_file_list)}")
+        # logger.info(f"files: {len(files)}")
 
         # 需要保存的文件
         need_save_files = []
@@ -99,8 +103,8 @@ class QuarkAutoSave:
         pattern, replace = mr.magic_regex_conv(
             self.params.get("pattern", ""), self.params.get("replace", "")
         )
-        logger.info(f"pattern: {pattern}")
-        logger.info(f"replace: {replace}")
+        # logger.info(f"pattern: {pattern}")
+        # logger.info(f"replace: {replace}")
         dir_name_list = [dir_file["file_name"] for dir_file in target_file_list]
         for share_file in files:
             search_pattern = (
@@ -197,8 +201,8 @@ class QuarkAutoSave:
             else:
               logger.error(f"任务 {task_id} 获取失败: {task_status.get('message')}")
               return
-        else:
-          logger.info("没有需要保存的文件")        
+        # else:
+        #   logger.info("没有需要保存的文件")        
 
     async def quark_auto_save(self, task: Dict[str, Any]):
         """夸克网盘自动保存任务
@@ -222,8 +226,10 @@ class QuarkAutoSave:
             logger_service.error_sync(f"任务 [{self.task_name}] 夸克网盘初始化失败，请检查 cookie 是否有效")
             return
           if not isShareUrlValid:
-              logger.error(f"任务 [{self.task_name}] 分享链接无效: {share_url} 跳过执行")
-              return
+              logger.error(f"任务 [{self.task_name}] 分享链接无效: {share_url} 尝试重新搜索")
+              share_url = await self.get_new_url(task, share_url)
+              if not share_url:
+                return
           if not share_url:
               logger.error(f"任务 [{self.task_name}] 缺少必要参数: shareUrl")
               return
@@ -255,13 +261,23 @@ class QuarkAutoSave:
             )
             if share_response.get("code") != 0:
               logger.error(f"分享链接无效: {share_url}")
-              # 创建新的任务对象进行更新
-              updated_task = task.copy()
-              updated_task['enabled'] = False
-              updated_task["params"] = task.get("params", {}).copy()
-              updated_task["params"]["isShareUrlValid"] = False
-              scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
-              return
+              share_url = await self.get_new_url(task, share_url)
+              if not share_url:
+                return
+              share_info = self.helper.sdk.extract_share_info(share_url)
+              share_response = await self.helper.sdk.get_share_info(
+                  share_info["share_id"], 
+                  share_info["password"]
+              )
+              if share_response.get("code") != 0:
+                logger.error(f"重新搜索分享链接无效: {share_url}")
+                # 创建新的任务对象进行更新
+                updated_task = task.copy()
+                updated_task['enabled'] = False
+                updated_task["params"] = task.get("params", {}).copy()
+                updated_task["params"]["isShareUrlValid"] = False
+                scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
+                return
           except Exception as e:
             logger.error(f"获取分享信息失败: {e}")
             # 创建新的任务对象进行更新
@@ -292,4 +308,34 @@ class QuarkAutoSave:
           }
         except Exception as e:
           logger_service.error_sync(f"夸克网盘自动转存任务 异常🚨: {self.task_name} ({self.task.get('task', '')}) {e}")
+          
+    async def get_new_url(self, task: Dict[str, Any], share_url: str):
+      logger.info(f"任务 [{self.task_name}] 重新搜索")
+      
 
+      results = await tg_resource.search_all(self.task_name)
+      searchResult = organize_search_results(results)
+      if not searchResult or 'list' not in searchResult[0] or not isinstance(searchResult[0]['list'], list) or searchResult[0]['list'] == []:
+          logger.error(f"任务 [{self.task_name}] 重新搜索结果格式不正确: {searchResult}")
+          return None
+      searchResult = searchResult[0]['list']
+      for searchItem in searchResult:
+          if searchItem['cloudType'] == "quark" and searchItem['cloudLinks'] and searchItem['cloudLinks'][0]:
+            share_url = searchItem['cloudLinks'][0]
+            share_info = self.helper.sdk.extract_share_info(share_url)
+            share_response = await self.helper.sdk.get_share_info(
+                share_info["share_id"], 
+                share_info["password"]
+            )
+            if share_response.get("code") == 0:
+              # 创建新的任务对象进行更新
+              updated_task = task.copy()
+              updated_task['enabled'] = True
+              updated_task["params"]["shareUrl"] = share_url
+              scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
+              logger.info(f"任务 [{self.task_name}] 重新搜索到有效的分享链接: {share_url} 并更新任务")
+              break
+            else:
+                logger.error(f"任务 [{self.task_name}] 重新搜索无效分享链接: {share_url} ")
+                return None
+      return share_url
