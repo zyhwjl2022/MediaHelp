@@ -121,7 +121,7 @@ const onCreateTask = () => {
       </div>
       <div class="flex w-2/3 flex-col justify-between pl-4">
         <div>
-          <h3 class="mb-2 truncate text-lg font-bold" :alt="item.title">
+          <h3 class="mb-2 truncate text-lg font-bold" :title="item.title">
             {{ item.title?.indexOf('名称') === -1 ? item.title : item.title?.split('名称：')[1] }}
           </h3>
           <p class="mb-2 line-clamp-3 text-gray-600">
