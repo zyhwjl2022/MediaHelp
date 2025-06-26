@@ -107,7 +107,9 @@ docker run -d \
 ## 👥 社区交流
 
 <div align="center">
-    <p>欢迎加入我们充满活力的社区！在这里，你可以：</p>
+    <p>欢迎加入我们充满活力的社区！在这里，<a href="https://t.me/mediahelp_offical">
+       链接
+    </a>你可以：</p>
     <ul align="left" style="display: inline-block;">
         <li>分享使用经验和技巧</li>
         <li>获取最新项目动态</li>
@@ -115,7 +117,7 @@ docker run -d \
         <li>参与功能讨论和建议</li>
     </ul>
     <p>
-        <a href="https://t.me/+xA5fFxBUQIg1YjE1">
+        <a href="https://t.me/mediahelp_offical">
             <img src="https://img.shields.io/badge/Telegram-MediaHelper社区-blue?logo=telegram" alt="Telegram Group">
         </a>
     </p>
