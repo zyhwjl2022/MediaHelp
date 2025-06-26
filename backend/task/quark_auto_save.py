@@ -325,8 +325,8 @@ class QuarkAutoSave:
       for searchItem in searchResult:
           if searchItem['cloudType'] == "quark" and searchItem['cloudLinks'] and searchItem['cloudLinks'][0]:
             share_url = searchItem['cloudLinks'][0]
-            if "quark" not in share_url:
-                logger.error(f"任务 [{self.task_name}] 重新搜索到的链接不是夸克网盘链接: {share_url}")
+            if "quark" not in share_url or self.task_name not in searchItem['title']:
+                logger.error(f"任务 [{self.task_name}] 重新搜索到的链接资源不正确或不是夸克网盘链接: {share_url}")
                 continue
             share_info = self.helper.sdk.extract_share_info(share_url)
             share_response = await self.helper.sdk.get_share_info(
@@ -340,8 +340,8 @@ class QuarkAutoSave:
               updated_task["params"]["shareUrl"] = share_url
               scheduled_manager.scheduled_manager.update_task(self.task_name, updated_task)
               logger.info(f"任务 [{self.task_name}] 重新搜索到有效的分享链接: {share_url} 并更新任务")
-              break
+              return share_url
             else:
-                logger.error(f"任务 [{self.task_name}] 重新搜索无效分享链接: {share_url} ")
-                return None
-      return share_url
+                logger.error(f"任务 [{self.task_name}] 重新搜索无效分享链接: {share_url} 继续查找")
+      logger.error(f"任务 [{self.task_name}] 重新搜索没有找到有效的分享链接")
+      return None
