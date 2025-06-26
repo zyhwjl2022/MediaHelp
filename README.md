@@ -35,11 +35,9 @@ MediaHelp 是一个强大的媒体资源管理工具，支持多个主流网盘�
   - 批量处理能力
   - 任务状态监控
 
-- 🎭 **媒体管理** (开发中)
-  - Emby 集成支持
-  - 媒体库管理
-  - 元数据刮削
-  - 智能分类整理
+- 🎭 **媒体管理** 
+  - Emby 飞牛影视集成支持，支持自动刷新
+  - 媒体库管理 (开发中)
 
 ## 🖥️ 功能展示
 
@@ -89,7 +87,8 @@ docker run -d \
    - 用户名：`admin`
    - 密码：`admin`
 
-> ⚠️ 安全提示：强烈建议私有化部署，因为涉及个人网盘信息安全
+> ⚠️ 安全提示：强烈建议私有化部署，因为涉及个人网盘信息安全。
+> 由于特殊原因，源码停止于此版本， docker镜像会一直更新
 
 ## 🔧 常见问题
 
@@ -104,7 +103,9 @@ docker run -d \
 </details>
 
 ## 👥 社区交流
-
+<a href="https://t.me/mediahelp_offical">
+  社区链接
+</a>
 <div align="center">
     <p>欢迎加入我们充满活力的社区！在这里，你可以：</p>
     <ul align="left" style="display: inline-block;">
@@ -114,7 +115,7 @@ docker run -d \
         <li>参与功能讨论和建议</li>
     </ul>
     <p>
-        <a href="https://t.me/+xA5fFxBUQIg1YjE1">
+        <a href="https://t.me/mediahelp_offical">
             <img src="https://img.shields.io/badge/Telegram-MediaHelper社区-blue?logo=telegram" alt="Telegram Group">
         </a>
     </p>
