@@ -63,6 +63,9 @@ class QuarkAutoSave:
 
         files = file_list.get("data", {}).get("list", [])
         
+        if not subdir_path:
+           files[0]['file_name'] = self.task_name
+
         # 获取分享文件列表 如果只有一个目录 自动读取目录内列表
         if not files:
           if subdir_path == "":
@@ -159,7 +162,7 @@ class QuarkAutoSave:
             if save_result.get("code") != 0:
               logger.error(f"文件保存失败: {save_result.get('message')}")
               return
-            logger.info(f"文件保存成功: {save_result}")
+            # logger.info(f"文件保存成功: {save_result}")
             
             task_id = save_result.get("data", {}).get("task_id")
 
@@ -176,7 +179,7 @@ class QuarkAutoSave:
               re_target_file_list = re_target_files.get("data", {}).get("list", [])
               for file in need_save_files:
                 saved_fid = next((f for f in re_target_file_list if f["file_name"]==file["file_name"]), None)
-                logger.info(f"saved_fid: {saved_fid}")
+                # logger.info(f"saved_fid: {saved_fid}")
                 try:
                   # 如果需要重命名
                   if file.get("file_name_re") and file["file_name_re"] != file["file_name"]:
