@@ -105,11 +105,11 @@ docker run -d \
 </details>
 
 ## 👥 社区交流
-
+<a href="https://t.me/mediahelp_offical">
+  社区链接
+</a>
 <div align="center">
-    <p>欢迎加入我们充满活力的社区！在这里，<a href="https://t.me/mediahelp_offical">
-       链接
-    </a>你可以：</p>
+    <p>欢迎加入我们充满活力的社区！在这里，你可以：</p>
     <ul align="left" style="display: inline-block;">
         <li>分享使用经验和技巧</li>
         <li>获取最新项目动态</li>
