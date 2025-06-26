@@ -302,8 +302,8 @@ class TaskScheduler:
                 flag = []
                 for task_name in need_flush_emby:
                     flag.append(await emby_manager.searchAndRefreshItem(task_name))
-            if all(flag):
-                 message += "\n🔄 EMBY刷新媒体库成功"
+                if all(flag):
+                    message += "\n🔄 EMBY刷新媒体库成功"
             notify_manager.send(title='📺MediaHelper 任务执行结果:', content=message)
 # 创建全局实例
 task_scheduler = TaskScheduler() 
