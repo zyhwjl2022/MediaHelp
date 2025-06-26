@@ -325,6 +325,9 @@ class QuarkAutoSave:
       for searchItem in searchResult:
           if searchItem['cloudType'] == "quark" and searchItem['cloudLinks'] and searchItem['cloudLinks'][0]:
             share_url = searchItem['cloudLinks'][0]
+            if "quark" not in share_url:
+                logger.error(f"任务 [{self.task_name}] 重新搜索到的链接不是夸克网盘链接: {share_url}")
+                continue
             share_info = self.helper.sdk.extract_share_info(share_url)
             share_response = await self.helper.sdk.get_share_info(
                 share_info["share_id"], 
