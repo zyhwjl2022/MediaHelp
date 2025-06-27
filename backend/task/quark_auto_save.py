@@ -296,6 +296,7 @@ class QuarkAutoSave:
               logger.error(f"获取分享token失败: {share_response}")
               return
 
+          self.need_save_files_global = []
           await self.dir_check_and_save(share_info["share_id"], token,share_info['dir_id'])
             # 格式化打印需要保存的文件列表
           if self.need_save_files_global:
