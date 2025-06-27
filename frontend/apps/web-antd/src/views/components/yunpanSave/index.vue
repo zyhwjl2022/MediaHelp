@@ -27,9 +27,13 @@ const props = defineProps({
     default: () => ({}),
   },
 });
+
+// 计算属性：获取分享链接
 const shareUrl = computed(() => {
   return props.item?.cloudLinks?.[0] || '';
 });
+
+// 响应式数据定义
 const fileList = ref<any[]>([]);
 const selectedFile = ref<any[]>([]);
 const stoken = ref<string>('');
@@ -55,6 +59,7 @@ const modalTitle = computed(() => {
 
 const width = ref('800px');
 
+// 窗口尺寸适配
 const updateWidth = () => {
   const w = window.innerWidth;
   if (w < 640) {
@@ -70,6 +75,7 @@ const updateWidth = () => {
   }
 };
 
+// 生命周期钩子
 onMounted(() => {
   updateWidth();
   window.addEventListener('resize', updateWidth);
@@ -80,6 +86,8 @@ onUnmounted(() => {
 });
 
 let lastShareUrl: any;
+
+// 格式化夸克分享链接
 const formatQuarkShareUrl = (dir: any = {}) => {
   const url = lastShareUrl ?? shareUrl.value;
   if (Object.keys(dir).length === 0 || dir.fid === 0) {
@@ -96,19 +104,23 @@ const formatQuarkShareUrl = (dir: any = {}) => {
     return lastShareUrl;
   }
 };
+
 let filePaths: any[] = [];
+
+// 优化：避免直接修改数组，返回新数组
 const selfSavePaths = (dir: any, filePaths: any[]) => {
   if (dir.fid) {
     const index = filePaths.findIndex((item) => item.fid === dir.fid);
-    if (index === -1) {
-      filePaths.push(dir);
-    } else {
-      filePaths = filePaths.slice(0, index + 1);
-    }
+    return index === -1 ? [...filePaths, dir] : filePaths.slice(0, index + 1);
   } else {
-    filePaths = [];
+    return [];
   }
 };
+
+// 定义响应式filepaths2
+const filepaths2 = ref<any[]>([]);
+
+// 获取分享文件列表
 const getShareFileList = async (dir: any = {}) => {
   if (props.item?.cloudType === 'quark') {
     loading.value = true;
@@ -143,22 +155,12 @@ const getShareFileList = async (dir: any = {}) => {
         file: true,
       })),
     ];
-    if (dir.fid) {
-      // 如果当前目录有fid，则将当前目录添加到filepaths中
-      const index = filePaths.findIndex((item) => item.fid === dir.fid);
-      if (index === -1) {
-        filePaths.push(dir);
-      } else {
-        filePaths = filePaths.slice(0, index + 1);
-      }
-    } else {
-      filePaths = [];
-    }
-    selfSavePaths(dir, filePaths);
+    filePaths = selfSavePaths(dir, filePaths);
     paths.value = [...filePaths];
   }
 };
-const filepaths2: any[] = [];
+
+// 获取目标文件列表
 const getFileList = async (dir: any = {}) => {
   if (props.item?.cloudType === 'quark') {
     loading.value = true;
@@ -166,8 +168,8 @@ const getFileList = async (dir: any = {}) => {
       loading.value = false;
     });
     fileList2.value = res.list ?? [];
-    selfSavePaths(dir, filepaths2);
-    paths2.value = [...filepaths2];
+    filepaths2.value = selfSavePaths(dir, filepaths2.value); // 使用响应式filepaths2
+    paths2.value = [...filepaths2.value];
   } else if (props.item?.cloudType === 'tianyiyun') {
     loading.value = true;
     const res = await getCloud189FileListApi({
@@ -190,28 +192,23 @@ const getFileList = async (dir: any = {}) => {
         file: true,
       })),
     ];
-    if (dir.fid) {
-      // 如果当前目录有fid，则将当前目录添加到filepaths中
-      const index = filePaths.findIndex((item) => item.fid === dir.fid);
-      if (index === -1) {
-        filePaths.push(dir);
-      } else {
-        filePaths = filePaths.slice(0, index + 1);
-      }
-    } else {
-      filePaths = [];
-    }
-    selfSavePaths(dir, filePaths);
-    paths2.value = [...filePaths];
+    filePaths = selfSavePaths(dir, filePaths);
+    filepaths2.value = filePaths; // 同步到filepaths2
+    paths2.value = [...filepaths2.value];
   }
 };
 
+// 保存分享文件
 const saveShareFile = async () => {
   if (props.item?.cloudType === 'quark') {
     const file_ids = selectedFile.value.map((item) => item.fid);
     const file_tokens = selectedFile.value.map((item) => item.share_fid_token);
     const target_dir = paths2.value[paths2.value.length - 1]?.fid ?? '0';
-    const pdir_fid = paths.value[paths.value.length - 1]?.fid ?? '0';
+    // const pdir_fid = paths.value[paths.value.length - 1]?.fid ?? '0';
+    // 优化：如果paths.value为空，则使用fileList的第一个文件夹ID
+    const pdir_fid = paths?.value?.length > 0 
+  ? paths.value[paths.value.length - 1]?.fid ?? fileList?.value?.[0]?.fid ?? '0' 
+  : fileList?.value?.[0]?.fid ?? '0'; 
     return await saveQuarkFileApi({
       share_url: shareUrl.value,
       file_ids,
@@ -244,6 +241,7 @@ const saveShareFile = async () => {
   }
 };
 
+// 监听open状态变化，重置所有状态
 watch(open, (value) => {
   if (value) {
     lastShareUrl = undefined;
@@ -251,12 +249,15 @@ watch(open, (value) => {
     fileList2.value = [];
     paths.value = [];
     paths2.value = [];
+    filepaths2.value = []; // 关键：重置响应式filepaths2
+    filePaths = [];
     selectedFile.value = [];
     currentStep.value = 0;
     getShareFileList();
   }
 });
 
+// 导航到指定目录
 const navigateTo = (dir: any) => {
   if (currentStep.value === 0) {
     getShareFileList(dir);
@@ -265,6 +266,7 @@ const navigateTo = (dir: any) => {
   }
 };
 
+// 确认操作
 const onOk = async () => {
   if (currentStep.value === 0) {
     // 下一步
@@ -280,10 +282,12 @@ const onOk = async () => {
   }
 };
 
+// 返回上一步
 const onBack = () => {
   currentStep.value = 0;
 };
 
+// 创建文件夹
 const createDir = async (fileName: any) => {
   if (!fileName) {
     message.error('请输入文件夹名称');
@@ -300,7 +304,6 @@ const createDir = async (fileName: any) => {
       })
       .then(() => {
         setTimeout(() => {
-          // 刷新
           getFileList({
             fid: paths2.value[paths2.value.length - 1]?.fid ?? '0',
           });
@@ -323,6 +326,7 @@ const createDir = async (fileName: any) => {
   }
 };
 
+// 重命名文件/文件夹
 const rename = async (_file: any) => {
   if (props.item?.cloudType === 'quark') {
     loading.value = true;
@@ -355,6 +359,7 @@ const rename = async (_file: any) => {
   }
 };
 
+// 删除文件/文件夹
 const deleteFile = async (_file: any) => {
   if (props.item?.cloudType === 'quark') {
     loading.value = true;

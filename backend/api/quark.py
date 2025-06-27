@@ -376,7 +376,7 @@ async def save_shared_files(
             file_list = await helper.sdk.get_share_file_list(
                 share_info["share_id"],
                 token,
-                share_info["dir_id"]
+                request.pdir_fid if share_info["dir_id"] == '0' else share_info["dir_id"]
             )
             
             if file_list.get("code") != 0:
@@ -390,8 +390,18 @@ async def save_shared_files(
             request.file_tokens = [f.get("share_fid_token", "") for f in files]
             
         # 创建根文件夹
-        logger.info(f"创建文件夹: {request.keyword} 在 {request.target_dir}")
-        request.target_dir = await helper.create_dir(request.keyword, request.target_dir)
+        target_list = await helper.list_files(request.target_dir)
+        if target_list:
+            found = False
+            for item in target_list:
+                if item.get('file_name') == request.keyword and item.get('dir'):
+                    request.target_dir = item.get('fid')
+                    found = True
+                    break
+            if not found:
+                request.target_dir = await helper.create_dir(request.keyword, request.target_dir)
+                if not request.target_dir:
+                    return Response(code=400, message="创建目标文件夹失败")    
 
         # 保存文件
         save_response = await helper.sdk.save_share_files(
