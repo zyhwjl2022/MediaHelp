@@ -13,6 +13,7 @@ import {
   message,
   Modal,
   Select,
+  Switch
 } from 'ant-design-vue';
 
 import { getResourceListApi } from '#/views/resource/api';
@@ -60,6 +61,7 @@ watch(
     currentTask.value.pattern = params.pattern;
     currentTask.value.replace = params.replace;
     currentTask.value.cron = task.cron ?? '0 19-23 * * *';
+    currentTask.value.is_down_load = task.is_down_load
     resourceList.value = [];
     allResourceList.value = [];
     cloudTypeList.value = [];
@@ -240,6 +242,7 @@ const onOk = () => {
       task: res.task,
       name: res.name,
       cron: res.cron,
+      is_down_load: res.is_down_load,
       params: {
         shareUrl: res.shareUrl,
         targetDir: res.targetDir,
@@ -414,6 +417,15 @@ const onOk = () => {
         :rules="[{ required: true, message: '请输入定时规则' }]"
       >
         <Input v-model:value="currentTask.cron" placeholder="请输入定时规则" />
+      </FormItem>
+      <FormItem
+        label="是否下载到本地"
+        name="is_down_load"
+      >
+        <Switch v-model:checked="currentTask.is_down_load" />
+          <span :class="currentTask.is_down_load ? 'text-green-500' : 'text-red-500'">{{
+            currentTask.is_down_load ? ' 启用' : ' 禁用'
+          }}</span>
       </FormItem>
     </Form>
     <SelectFolder

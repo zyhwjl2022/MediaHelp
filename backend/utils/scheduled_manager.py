@@ -198,6 +198,14 @@ class ScheduledManager:
         """禁用任务"""
         return self.update_task(name, {"enabled": False})
 
+    def enable_task_down_load(self, name: str) -> bool:
+        """启用任务下载"""
+        return self.update_task(name, {"is_down_load": True})
+
+    def disable_task_down_load(self, name: str) -> bool:
+        """禁用任务下载"""
+        return self.update_task(name, {"is_down_load": False})
+
     def get_next_run_time(self, task: Dict[str, Any]) -> Optional[datetime]:
         """获取任务下次运行时间"""
         try:

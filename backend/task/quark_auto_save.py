@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, sys.path[0]+"/../")
 from utils.tg_resource_sdk import tg_resource
 from api.tg_resource import organize_search_results
+from utils.down_load_to_fn import fn_os
 
 class QuarkAutoSave:
     helper = None
@@ -18,6 +19,7 @@ class QuarkAutoSave:
     task = {}
     savepath_fid = {"/": "0"}
     need_save_files_global = []
+    down_load_result_msg = ""
     
   
     def __init__(self):
@@ -45,7 +47,7 @@ class QuarkAutoSave:
         return to_pdir_fid
 
     async def dir_check_and_save(self, pwd_id, stoken, pdir_fid="", subdir_path=""):
-        target_dir = self.params.get("targetDir", "/")
+        target_dir = self.params.get("targetDir")
         start_magic = self.params.get("startMagic", [])
         if not isinstance(start_magic, list):
             start_magic = [start_magic] if start_magic else []
@@ -138,7 +140,9 @@ class QuarkAutoSave:
                         if re.search(r'\.(mp4|mkv|avi|rmvb|flv|wmv|mov|m4v)$', share_file["file_name"].lower()):
                             share_file["file_name_re"] = file_name_re
                         need_save_files.append(share_file)
+                        share_file['file_real_path'] = f"{target_dir}{subdir_path}/{share_file['file_name']}"
                         self.need_save_files_global.append(share_file)
+                        
               else:
                 # 文件夹
                 # 创建文件夹
@@ -146,6 +150,7 @@ class QuarkAutoSave:
                 to_pdir_fid2 = await self.get_dir_fid(f"{target_dir}{subdir_path}/{share_file['file_name']}")
                 if not to_pdir_fid2:
                   await self.helper.sdk.create_folder(share_file["file_name"], to_pdir_fid)
+                  self.need_save_files_global.append(share_file)
                 await self.dir_check_and_save(pwd_id, stoken, share_file["fid"],subdir_path= f"{subdir_path}/{share_file['file_name']}")        
         # 保存文件
         if need_save_files:
@@ -220,7 +225,7 @@ class QuarkAutoSave:
           self.task_name = task.get("name", "")
           logger_service.info_sync(f"夸克网盘自动转存任务 开始🏃‍➡️: {self.task_name} ({self.task.get('task', '')})") 
           share_url = self.params.get("shareUrl")
-          target_dir = self.params.get("targetDir", "/")
+          target_dir = self.params.get("targetDir")
           isShareUrlValid = self.params.get("isShareUrlValid", True)
           
           # 验证cookie 是否有效
@@ -300,14 +305,30 @@ class QuarkAutoSave:
           await self.dir_check_and_save(share_info["share_id"], token,share_info['dir_id'])
             # 格式化打印需要保存的文件列表
           if self.need_save_files_global:
+            # logger.info(f"夸克网盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 需要保存的文件: {self.need_save_files_global}")
             file_list_str = "\n".join([f"🎬 {file['file_name']}" + (f"\n   ↳ 将重命名为: {file['file_name_re']}" if file.get('file_name_re') else "") for file in self.need_save_files_global])
             logger_service.info_sync(f"夸克网盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 保存的文件:\n{file_list_str}")
+
+            # 开始处理下载
+            if task.get("is_down_load", False):
+              logger.info(f"夸克网盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 开始下载")
+              if len(self.need_save_files_global) > 0:
+                  fn_os.dramaList = [file['file_real_path'] for file in self.need_save_files_global]
+                  fn_os.keyword = self.task_name
+                  fn_os.cloud_type = "quark"
+                  down_load_result,self.down_load_result_msg = await fn_os.run_async()
+              else:
+                self.down_load_result_msg = "没有需要保存的文件"
+            else:
+               logger.error(f"夸克网盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 未启用下载")
+               self.down_load_result_msg = "未启用下载"
           else:
             logger_service.info_sync(f"夸克网盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 没有需要保存的文件")
           logger_service.info_sync(f"夸克网盘自动转存任务 结束🏁: {self.task_name} ({self.task.get('task', '')})")
           return {
             "task_name": f'{self.task_name}',
             "task": self.task.get("task", ""),
+            "down_load_result": self.down_load_result_msg if self.task.get("is_down_load", False) else "未启用下载",
             "need_save_files": self.need_save_files_global
           }
         except Exception as e:

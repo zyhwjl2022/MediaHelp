@@ -44,13 +44,13 @@ async def decode_token(token: str) -> dict:
         if username is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="无效的认证凭据",
+                detail="请登录",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return payload
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的认证凭据",
+            detail="请登录",
             headers={"WWW-Authenticate": "Bearer"},
         ) 

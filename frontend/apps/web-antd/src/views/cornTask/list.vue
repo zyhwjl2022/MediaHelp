@@ -14,6 +14,8 @@ import {
   deleteCornTaskApi,
   disableCornTaskApi,
   enableCornTaskApi,
+  disableDownLoadCornTaskApi,
+  enableDownLoadCornTaskApi,
   getCornTaskListApi,
   runCornTaskApi,
 } from './api';
@@ -43,6 +45,14 @@ const gridOptions: VxeGridProps = {
       minWidth: 100,
       slots: {
         default: 'enabled',
+      },
+    },
+    {
+      field: 'is_down_load',
+      title: '下载到本地',
+      minWidth: 100,
+      slots: {
+        default: 'is_down_load',
       },
     },
     {
@@ -132,7 +142,7 @@ const runTaskEvent = (row: any) => {
     });
 };
 
-const handleSwitchEvent = (row: any) => {
+const handleEnableSwitchEvent = (row: any) => {
   if (row.enabled) {
     disableCornTaskApi(row.name).then(() => {
       message.success('禁用成功');
@@ -140,6 +150,19 @@ const handleSwitchEvent = (row: any) => {
     });
   } else {
     enableCornTaskApi(row.name).then(() => {
+      message.success('启用成功');
+      reload();
+    });
+  }
+};
+const handleDownLoadSwitchEvent = (row: any) => {
+  if (row.is_down_load) {
+    disableDownLoadCornTaskApi(row.name).then(() => {
+      message.success('禁用成功');
+      reload();
+    });
+  } else {
+    enableDownLoadCornTaskApi(row.name).then(() => {
       message.success('启用成功');
       reload();
     });
@@ -163,11 +186,17 @@ const handleSwitchEvent = (row: any) => {
           分享链接失效
         </span>
         <div v-else>
-          <Switch :checked="row.enabled" @click="handleSwitchEvent(row)" />
+          <Switch :checked="row.enabled" @click="handleEnableSwitchEvent(row)" />
           <span :class="row.enabled ? 'text-green-500' : 'text-red-500'">{{
             row.enabled ? ' 启用' : ' 禁用'
           }}</span>
         </div>
+      </template>
+      <template #is_down_load="{ row }">
+        <Switch :checked="row.is_down_load" @click="handleDownLoadSwitchEvent(row)" />
+        <span :class="row.is_down_load ? 'text-green-500' : 'text-red-500'">{{
+          row.is_down_load ? ' 启用' : ' 禁用'
+        }}</span>
       </template>
       <template #action="{ row }">
         <Button type="link" @click="runTaskEvent(row)" success>

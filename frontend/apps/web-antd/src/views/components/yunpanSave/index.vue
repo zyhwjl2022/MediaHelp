@@ -199,7 +199,7 @@ const getFileList = async (dir: any = {}) => {
 };
 
 // 保存分享文件
-const saveShareFile = async () => {
+const saveShareFile = async (is_down_load:boolean = false) => {
   if (props.item?.cloudType === 'quark') {
     const file_ids = selectedFile.value.map((item) => item.fid);
     const file_tokens = selectedFile.value.map((item) => item.share_fid_token);
@@ -217,6 +217,8 @@ const saveShareFile = async () => {
       pdir_fid,
       stoken: stoken.value,
       keyword: props.item.keyword,
+      is_down_load: is_down_load,
+      cloud_path: "/"+paths2.value.map((item) => item.name).join('/')
     });
   } else if (props.item?.cloudType === 'tianyiyun') {
     const target_folder_id =
@@ -237,6 +239,7 @@ const saveShareFile = async () => {
       share_url: shareUrl.value,
       target_folder_id,
       file_ids,
+      is_down_load: is_down_load,
     });
   }
 };
@@ -267,7 +270,7 @@ const navigateTo = (dir: any) => {
 };
 
 // 确认操作
-const onOk = async () => {
+const onOk = async (is_down_load:boolean = false) => {
   if (currentStep.value === 0) {
     // 下一步
     currentStep.value = 1;
@@ -276,7 +279,7 @@ const onOk = async () => {
     }
   } else {
     // 保存
-    await saveShareFile();
+    await saveShareFile(is_down_load); // 传递参数到saveShareFile函数
     open.value = false;
     message.success('保存成功');
   }
@@ -426,7 +429,8 @@ const deleteFile = async (_file: any) => {
     </div>
     <template #footer>
       <Button @click="onBack" v-show="currentStep === 1"> 返回 </Button>
-      <Button type="primary" @click="onOk">{{ okText }}</Button>
+      <Button type="primary" @click="onOk(false)">{{ okText }}</Button>
+      <Button type="primary" v-show="currentStep === 1" @click="onOk(true)">保存并下载</Button>
     </template>
   </Modal>
 </template>

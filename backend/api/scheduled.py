@@ -104,6 +104,41 @@ async def delete_task(
         raise APIException(message="删除任务失败")
     return Response()
 
+@router.post("/tasks/{task_name}/enableDownLoad", response_model=Response[Dict[str, Any]])
+async def enable_task(
+    task_name: str,
+    current_user: User = Depends(get_current_user)
+):
+    """启用定时任务下载"""
+    if not scheduled_manager.enable_task_down_load(task_name):
+        raise APIException(message="启用任务下载失败")
+    
+    # 获取更新后的任务
+    task = scheduled_manager.get_task_by_name(task_name)
+    if task:
+        next_run = scheduled_manager.get_next_run_time(task)
+        task["next_run"] = next_run.isoformat() if next_run else None
+    
+    return Response(data=task)
+
+@router.post("/tasks/{task_name}/disableDownLoad", response_model=Response[Dict[str, Any]])
+async def disable_task(
+    task_name: str,
+    current_user: User = Depends(get_current_user)
+):
+    """禁用定时任务下载"""
+    if not scheduled_manager.disable_task_down_load(task_name):
+        raise APIException(message="禁用任务下载失败")
+    
+    # 获取更新后的任务
+    task = scheduled_manager.get_task_by_name(task_name)
+    if task:
+        next_run = scheduled_manager.get_next_run_time(task)
+        task["next_run"] = next_run.isoformat() if next_run else None
+    
+    return Response(data=task)
+
+
 @router.post("/tasks/{task_name}/enable", response_model=Response[Dict[str, Any]])
 async def enable_task(
     task_name: str,

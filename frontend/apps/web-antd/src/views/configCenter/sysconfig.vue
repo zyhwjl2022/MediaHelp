@@ -26,6 +26,49 @@ const [Form, formApi] = useVbenForm({
     {
       component: 'Divider',
       fieldName: '',
+      label: '飞牛配置',
+      labelWidth: 80,
+      wrapperClass: 'w-full',
+    },
+    {
+      component: 'Input',
+      fieldName: 'fn_url',
+      label: '飞牛地址',
+      labelWidth: 100,
+    },
+    {
+      component: 'Input',
+      fieldName: 'fn_username',
+      label: '飞牛账号',
+      labelWidth: 100,
+    },
+    {
+      component: 'Input',
+      fieldName: 'fn_password',
+      label: '飞牛密码',
+      labelWidth: 100,
+    },
+    {
+      component: 'Input',
+      fieldName: 'quark_path',
+      label: '夸克路径',
+      labelWidth: 100,
+    },
+    {
+      component: 'Input',
+      fieldName: 'cloud189_path',
+      label: '天翼路径',
+      labelWidth: 100,
+    },
+    {
+      component: 'Input',
+      fieldName: 'save_path',
+      label: '飞牛路径',
+      labelWidth: 100,
+    },
+    {
+      component: 'Divider',
+      fieldName: '',
       label: 'Emby配置',
       labelWidth: 80,
       wrapperClass: 'w-full',
@@ -98,6 +141,12 @@ const [Form, formApi] = useVbenForm({
 // 加载配置数据
 const loadConfig = async () => {
   const res = await getSysConfigApi({});
+  formApi.setFieldValue('fn_url', res.fn_url);
+  formApi.setFieldValue('fn_username', res.fn_username);
+  formApi.setFieldValue('fn_password', res.fn_password);
+  formApi.setFieldValue('quark_path', res.quark_path);
+  formApi.setFieldValue('cloud189_path', res.cloud189_path);
+  formApi.setFieldValue('save_path', res.save_path);
   formApi.setFieldValue('emby_url', res.emby_url);
   formApi.setFieldValue('emby_api_key', res.emby_api_key);
   formApi.setFieldValue('alist_url', res.alist_url);

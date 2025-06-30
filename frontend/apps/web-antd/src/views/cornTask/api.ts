@@ -22,6 +22,20 @@ export async function disableCornTaskApi(taskName: string) {
 }
 
 /**
+ * 启用定时任务下载
+ */
+export async function enableDownLoadCornTaskApi(taskName: string) {
+  return requestClient.post(`/scheduled/tasks/${taskName}/enableDownLoad`, {});
+}
+
+/**
+ * 禁用定时任务下载
+ */
+export async function disableDownLoadCornTaskApi(taskName: string) {
+  return requestClient.post(`/scheduled/tasks/${taskName}/disableDownLoad`, {});
+}
+
+/**
  * 删除定时任务
  */
 export async function deleteCornTaskApi(taskName: string) {

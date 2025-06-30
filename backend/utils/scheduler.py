@@ -276,6 +276,7 @@ class TaskScheduler:
                 continue
                 
             need_save_files = result.get("need_save_files", [])
+            down_load_result = result.get("down_load_result", "")
             if not need_save_files:
                 continue
             task_name = result.get("task_name", "")
@@ -295,7 +296,7 @@ class TaskScheduler:
                     file_list.append(f"🎬 {file_name}")
             if file_list:
                 file_list_str = "\n".join(file_list)+"\n\n"
-                message += f"任务执行结果: {task_name}{task_type} 执行成功\n保存的文件:\n{file_list_str}"
+                message += f"任务执行结果: {task_name}{task_type} 执行成功\n保存的文件:\n{file_list_str}\n下载到飞牛：{down_load_result}"
                 need_flush_emby.append(task_name)
         if message:
             if await emby_manager.isEmbyManagerEnable():

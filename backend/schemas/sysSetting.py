@@ -37,6 +37,12 @@ class SysSettingCreate(SysSettingBase):
 
 class SysSettingUpdate(BaseModel):
     """更新系统配置模型"""
+    fn_url: Optional[str] = Field(default=None, description="飞牛地址")
+    fn_username: Optional[str] = Field(default=None, description="飞牛账号")
+    fn_password: Optional[str] = Field(default=None, description="飞牛密码")
+    quark_path: Optional[str] = Field(default=None, description="夸克路径")
+    cloud189_path: Optional[str] = Field(default=None, description="天翼路径")
+    save_path: Optional[str] = Field(default=None, description="飞牛路径")
     emby_url: Optional[str] = Field(default=None, description="Emby服务器地址")
     emby_api_key: Optional[str] = Field(default=None, description="Emby API密钥")
     alist_url: Optional[str] = Field(default=None, description="Alist服务器地址")

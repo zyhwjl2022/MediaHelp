@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Query, Body
 from typing import List, Optional, Dict, Union, Tuple
 
+import asyncio
+
 from pydantic import BaseModel, Field
 from api.deps import get_current_user
 from models.user import User
@@ -8,6 +10,7 @@ from schemas.response import Response
 from utils.quark_helper import QuarkHelper
 from utils.config_manager import config_manager
 from loguru import logger
+from utils.down_load_to_fn import fn_os
 
 router = APIRouter(prefix="/quark", tags=["夸克网盘"])
 
@@ -24,6 +27,8 @@ class SaveShareFilesRequest(BaseModel):
     pdir_fid: str = Field(default="0", description="来源文件夹ID")
     file_ids: List[str] = Field(default=[], description="要保存的文件ID列表，为空则保存所有文件")
     file_tokens: List[str] = Field(default=[], description="要保存的文件token列表，需要与file_ids一一对应")
+    is_down_load: bool = Field(default=False, description="是否下载到本地")
+    cloud_path: str = Field(default="", description="云盘路径")
 
 
 class CreateDirectoryRequest(BaseModel):
@@ -418,6 +423,18 @@ async def save_shared_files(
                 code=400, 
                 message=save_response.get("message", "保存分享文件失败")
             )
+        
+        
+        # 如果需要下载到本地文件夹
+        if request.is_down_load:
+            logger.info(f"开始下载分享文件到本地: {request.cloud_path}")
+            fn_os.cloud_file_path = request.cloud_path+"/"+request.keyword
+            fn_os.keyword = request.keyword
+            fn_os.cloud_type = "quark"
+            down_load_result,down_load_result_msg = await fn_os.run_async()
+            if not down_load_result:
+                return Response(code=500, message="下载失败,"+down_load_result_msg)
+
             
         return Response(code=200, message="操作成功", data=save_response.get("data",{}))
     except Exception as e:

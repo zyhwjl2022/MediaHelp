@@ -74,6 +74,18 @@ async def update_system_config(
     """
     # 更新配置文件
     new_config = {}
+    if config.fn_url is not None:
+        new_config["fn_url"] = config.fn_url
+    if config.fn_username is not None:
+        new_config["fn_username"] = config.fn_username
+    if config.fn_password is not None:
+        new_config["fn_password"] = config.fn_password
+    if config.quark_path is not None:
+        new_config["quark_path"] = config.quark_path
+    if config.cloud189_path is not None:
+        new_config["cloud189_path"] = config.cloud189_path
+    if config.save_path is not None:
+        new_config["save_path"] = config.save_path
     if config.emby_url is not None:
         new_config["emby_url"] = config.emby_url
     if config.emby_api_key is not None:
