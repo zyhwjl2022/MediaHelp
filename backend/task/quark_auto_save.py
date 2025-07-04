@@ -313,9 +313,14 @@ class QuarkAutoSave:
             if task.get("is_down_load", False):
               logger.info(f"夸克网盘自动转存任务 {self.task_name} ({self.task.get('task', '')}) 开始下载")
               if len(self.need_save_files_global) > 0:
-                  fn_os.dramaList = [file['file_real_path'] for file in self.need_save_files_global]
+                  fn_os.dramaList = [
+                      file['file_real_path'] 
+                      for file in self.need_save_files_global 
+                      if 'file_real_path' in file and file['file_real_path']
+                  ]
                   fn_os.keyword = self.task_name
                   fn_os.cloud_type = "quark"
+                  fn_os.cloud_file_path = None
                   down_load_result,self.down_load_result_msg = await fn_os.run_async()
               else:
                 self.down_load_result_msg = "没有需要保存的文件"

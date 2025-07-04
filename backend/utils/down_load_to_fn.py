@@ -14,6 +14,7 @@ import random
 import string
 from typing import Dict, Any, Optional
 from loguru import logger
+from typing import List, Dict, Any
 
 from utils.config_manager import config_manager
 
@@ -156,7 +157,8 @@ class Fnos:
         
         # 构建WebSocket连接地址
         self.websocket_url = f"ws://{self.fn_url}/websocket?type=main"
-        self.preReqid = secrets.token_hex(8)  # 生成随机请求ID
+        # self.preReqid = secrets.token_hex(8)  # 生成随机请求ID
+        self.preReqid = '676cf70d'
         self.download_path = ""
 
     async def connect_to_websocket(self):
@@ -222,23 +224,58 @@ class Fnos:
         else:
             logger.warning(f"文件夹创建响应异常: {response}")
             return False,f"文件夹创建响应异常: {response}"
+        
+    def group_file_paths(self,file_paths: List[str], keyword: str) -> Dict[str, List[str]]:
+        """
+        根据指定关键词对文件路径进行分组
+        
+        参数:
+        - file_paths: 包含文件路径的字符串列表
+        - keyword: 用于切分路径的关键词
+        
+        返回:
+        - 分组结果字典，键为切分后的路径部分，值为原始路径列表
+        """
+        groups = {}
+        
+        for path in file_paths:
+            # 第一次切分：使用关键词切分，保留后半部分
+            if keyword in path:
+                _, after_keyword = path.split(keyword, 1)
+                
+                # 第二次切分：使用最后一个斜杠切分，保留前半部分
+                last_slash_index = after_keyword.rfind('/')
+                if last_slash_index != -1:
+                    group_key = after_keyword[:last_slash_index]
+                else:
+                    group_key = ''
+                    
+                # 将路径添加到对应的分组
+                if group_key not in groups:
+                    groups[group_key] = []
+                groups[group_key].append(path)
+        
+        return groups
 
-    async def download_files_task(self, websocket, secret, folder_path, file_list):
+    async def download_files_task(self, websocket, secret, folder_path, file_list, ):
         """执行文件下载任务"""
         if not file_list:
             logger.error("未获取到待下载文件列表")
             return False,"未获取到待下载文件列表"
         
+        # 输出分组结果
+        reqid = secrets.token_hex(14)   
         # 构造文件复制请求
         files_str = ','.join(f'"{f}"' for f in file_list)
         download_req = {
-            "reqid": f"{self.preReqid}00000000000000000004",
+            "reqid": f"{reqid}",
             "files": json.loads(f"[{files_str}]"),
             "pathTo": folder_path,
             "overwrite": 1,
             "description": f"夸克自动下载【{self.keyword}】",
             "req": "file.cp"
         }
+        logger.debug(f"飞牛: 准备下载文件: {download_req}")
         req_str = json.dumps(download_req)
         
         # 生成HMAC签名
@@ -251,18 +288,21 @@ class Fnos:
         
         while True:
             response = await wss_connect(websocket)
-            logger.debug(f"下载响应: {response}")
-            if '"sysNotify":"taskId"' in response:
-                logger.info("收到资源下载任务")
-                return True,"收到资源下载任务"
-            elif '"result":"fail"' in response:
-                print()
-                logger.error(f"下载任务异常: {response}，请检查配置")
-                return False,f"下载任务异常: {response}，请检查配置"
-            elif '"result":"cancel"' in response:
-                print()
-                logger.warning("下载任务被取消")
-                return False,"下载任务被取消"
+            if reqid in response:
+                logger.debug(f"下载响应: {response}")
+                if '"sysNotify":"taskInfo"' in response:
+                    logger.debug(f"下载响应: {response}")
+                if '"sysNotify":"taskId"' in response:
+                    logger.info("收到资源下载任务")
+                    return True,"收到资源下载任务"
+                elif '"result":"fail"' in response:
+                    print()
+                    logger.error(f"下载任务异常: {response}，请检查配置")
+                    return False,f"下载任务异常: {response}，请检查配置"
+                elif '"result":"cancel"' in response:
+                    print()
+                    logger.warning("下载任务被取消")
+                    return False,"下载任务被取消"
         # while True:
         #     response = await wss_connect(websocket)
         #     logger.debug(f"ID:{self.preReqid}")
@@ -312,13 +352,10 @@ class Fnos:
             error_info = f"配置缺失必要参数: {', '.join(self.missing)}，请检查配置"
             logger.error(error_info)
             return False, error_info
-        # 构建下载路径
-        self.download_path = f"{self.save_path}/{self.processMediaType(self.quark_path)}" if "quark" == self.cloud_type else f"{self.save_path}/{self.processMediaType(self.cloud189_path)}"
-        logger.info(f"飞牛: 保存路径：{self.download_path}")
         
         if not self.dramaList:
             # 手动保存 夸克网盘
-            self.dramaList = [self.quark_path+self.cloud_file_path] if "quark" == self.cloud_type else [self.cloud189_path+self.cloud_file_path]
+            self.dramaList = [self.quark_path+self.cloud_file_path+"/"+self.keyword] if "quark" == self.cloud_type else [self.cloud189_path+self.cloud_file_path+"/"+self.keyword]
         elif isinstance(self.dramaList, list):
             # 确保dramaList中的路径是完整的
             logger.info(f"self.dramaList{self.dramaList}")
@@ -327,6 +364,10 @@ class Fnos:
             logger.info(f"self.dramaList{self.dramaList}")
 
         logger.info(f"飞牛: 待下载文件列表：{self.dramaList}")
+
+        # 构建下载路径
+        self.download_path = f"{self.save_path}/{self.processMediaType(self.dramaList[0])}" if "quark" == self.cloud_type else f"{self.save_path}/{self.processMediaType(self.dramaList[0])}"
+        logger.info(f"飞牛: 保存路径：{self.download_path}")
 
         try:
             # 创建WebSocket连接
@@ -372,21 +413,49 @@ class Fnos:
                                     secret = base64.b64decode(decrypted_secret)
                                     logger.success("用户认证成功")
                                     
-                                    # 创建下载文件夹
-                                    create_folder_result,create_folder_msg = await self.create_folder(websocket, secret, self.download_path)
-                                    if create_folder_result:
-                                        # 执行文件下载
-                                        download_files_task_result,download_files_task_msg = await self.download_files_task(websocket, secret, self.download_path, self.dramaList)
-                                        if download_files_task_result:
-                                            logger.success("文件下载任务已提交")
-                                            return True, "文件下载任务已提交"
+                                    if self.cloud_file_path:
+                                        logger.debug("未启用分组处理")
+                                        # 创建下载文件夹
+                                        create_folder_result,create_folder_msg = await self.create_folder(websocket, secret, self.download_path+"/"+self.keyword)
+                                        if create_folder_result:
+                                            # 执行文件下载
+                                            download_files_task_result,download_files_task_msg = await self.download_files_task(websocket, secret, self.download_path, self.dramaList)
+                                            if download_files_task_result:
+                                                logger.success("文件下载任务已提交")
+                                                return True,"文件下载任务已提交"
+                                            else:
+                                                error_info = download_files_task_msg
+                                                logger.error(error_info)
+                                                break
                                         else:
-                                            error_info = download_files_task_msg
-                                            logger.error(error_info)
-                                        break  # 认证和下载成功后退出循环
+                                            error_info = create_folder_msg
+                                            break
                                     else:
-                                        error_info = create_folder_msg
-                                        break
+                                        # 分组处理
+                                        logger.debug(f"file_list:{self.dramaList}")
+                                        grouped_paths = self.group_file_paths(self.dramaList, self.keyword)
+                                        isBreak = False
+                                        for sub_path, paths in grouped_paths.items():
+                                            download_path = self.download_path+"/"+self.keyword+sub_path
+                                            # 创建下载文件夹
+                                            create_folder_result,create_folder_msg = await self.create_folder(websocket, secret, download_path)
+                                            if create_folder_result:
+                                                # 执行文件下载
+                                                download_files_task_result,download_files_task_msg = await self.download_files_task(websocket, secret, download_path, paths)
+                                                if download_files_task_result:
+                                                    logger.success("文件下载任务已提交")
+                                                else:
+                                                    error_info = download_files_task_msg
+                                                    logger.error(error_info)
+                                                    isBreak = True
+                                            else:
+                                                error_info = create_folder_msg
+                                                isBreak = True
+                                            
+                                        if isBreak:
+                                            break
+                                        else:
+                                            return True,"文件下载任务已提交"
                                 else:
                                     error_info = "认证响应中缺少secret字段"
                                     logger.error(error_info)

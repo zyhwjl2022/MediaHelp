@@ -428,9 +428,10 @@ async def save_shared_files(
         # 如果需要下载到本地文件夹
         if request.is_down_load:
             logger.info(f"开始下载分享文件到本地: {request.cloud_path}")
-            fn_os.cloud_file_path = request.cloud_path+"/"+request.keyword
+            fn_os.cloud_file_path = request.cloud_path
             fn_os.keyword = request.keyword
             fn_os.cloud_type = "quark"
+            fn_os.dramaList = []
             down_load_result,down_load_result_msg = await fn_os.run_async()
             if not down_load_result:
                 return Response(code=500, message="下载失败,"+down_load_result_msg)

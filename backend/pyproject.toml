@@ -25,6 +25,7 @@ dependencies = [
     "aiohttp>=3.12.11",
     "pycryptodome>=3.23.0",
     "croniter>=2.0.3",
+    "websockets>=15.0.1"
 ]
 
 [build-system]
